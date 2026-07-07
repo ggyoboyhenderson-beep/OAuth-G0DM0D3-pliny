@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Vitalis — your companion for a healthier life. Wellness tips, tools, and resources for body and mind." />
+  <title>Vitalis · Health & Wellness</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%9C%A6%3C/text%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-header" id="top">
+    <div class="container nav-wrap">
+      <a class="brand" href="#top" aria-label="Vitalis home">
+        <span class="brand-mark" aria-hidden="true">✦</span>
+        <span class="brand-name">Vitalis</span>
+      </a>
+      <nav class="nav" aria-label="Primary">
+        <button class="nav-toggle" aria-expanded="false" aria-controls="nav-menu">
+          <span class="sr-only">Menu</span>
+          <span class="bars" aria-hidden="true"></span>
+        </button>
+        <ul id="nav-menu" class="nav-menu">
+          <li><a href="#services">Services</a></li>
+          <li><a href="#tools">Tools</a></li>
+          <li><a href="#tips">Tips</a></li>
+          <li><a href="#about">About</a></li>
+          <li><a class="nav-cta" href="#contact">Get started</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <!-- Hero -->
+    <section class="hero">
+      <div class="container hero-grid">
+        <div class="hero-copy">
+          <p class="eyebrow">Body · Mind · Balance</p>
+          <h1>Small steps today,<br />a healthier you tomorrow.</h1>
+          <p class="lead">
+            Vitalis brings evidence-based wellness guidance, practical tools, and
+            gentle daily habits together in one calm place — so taking care of
+            yourself feels simple.
+          </p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="#tools">Try our tools</a>
+            <a class="btn btn-ghost" href="#tips">Read the tips</a>
+          </div>
+          <dl class="hero-stats">
+            <div><dt>10k+</dt><dd>habits tracked</dd></div>
+            <div><dt>4.9★</dt><dd>average rating</dd></div>
+            <div><dt>100%</dt><dd>free tools</dd></div>
+          </dl>
+        </div>
+        <div class="hero-art" aria-hidden="true">
+          <div class="pulse-card">
+            <span class="pulse-label">Resting heart rate</span>
+            <span class="pulse-value">62 <small>bpm</small></span>
+            <svg viewBox="0 0 240 60" class="pulse-line" preserveAspectRatio="none">
+              <polyline points="0,30 40,30 55,10 70,50 85,30 130,30 145,18 160,42 175,30 240,30" />
+            </svg>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Services -->
+    <section id="services" class="section">
+      <div class="container">
+        <header class="section-head">
+          <p class="eyebrow">What we cover</p>
+          <h2>Wellness for the whole you</h2>
+          <p class="section-sub">Four pillars that work together, not in isolation.</p>
+        </header>
+        <div class="cards">
+          <article class="card">
+            <div class="card-icon" aria-hidden="true">🥗</div>
+            <h3>Nutrition</h3>
+            <p>Balanced, realistic eating guidance you can actually keep up with — no fad diets.</p>
+          </article>
+          <article class="card">
+            <div class="card-icon" aria-hidden="true">🏃</div>
+            <h3>Movement</h3>
+            <p>Routines for every level, from a five-minute stretch to a full training week.</p>
+          </article>
+          <article class="card">
+            <div class="card-icon" aria-hidden="true">🧘</div>
+            <h3>Mind</h3>
+            <p>Breathing, mindfulness, and sleep habits to steady your mood and focus.</p>
+          </article>
+          <article class="card">
+            <div class="card-icon" aria-hidden="true">💧</div>
+            <h3>Hydration</h3>
+            <p>Simple reminders and targets to keep your energy and skin at their best.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tools -->
+    <section id="tools" class="section section-alt">
+      <div class="container">
+        <header class="section-head">
+          <p class="eyebrow">Free tools</p>
+          <h2>Quick check-ins</h2>
+          <p class="section-sub">Private by design — everything runs in your browser, nothing is stored.</p>
+        </header>
+
+        <div class="tools-grid">
+          <!-- BMI Calculator -->
+          <article class="tool-card">
+            <h3>BMI calculator</h3>
+            <p class="tool-hint">Estimate your body mass index. A general guide, not medical advice.</p>
+            <form id="bmi-form" class="tool-form" novalidate>
+              <div class="units-toggle" role="group" aria-label="Units">
+                <button type="button" class="unit-btn is-active" data-units="metric">Metric</button>
+                <button type="button" class="unit-btn" data-units="imperial">Imperial</button>
+              </div>
+
+              <div class="field-row" data-metric>
+                <label>Height (cm)
+                  <input type="number" id="height-cm" min="50" max="260" step="0.1" inputmode="decimal" />
+                </label>
+                <label>Weight (kg)
+                  <input type="number" id="weight-kg" min="10" max="400" step="0.1" inputmode="decimal" />
+                </label>
+              </div>
+
+              <div class="field-row is-hidden" data-imperial>
+                <label>Height (ft)
+                  <input type="number" id="height-ft" min="1" max="8" step="1" inputmode="numeric" />
+                </label>
+                <label>Height (in)
+                  <input type="number" id="height-in" min="0" max="11" step="0.1" inputmode="decimal" />
+                </label>
+                <label>Weight (lb)
+                  <input type="number" id="weight-lb" min="20" max="900" step="0.1" inputmode="decimal" />
+                </label>
+              </div>
+
+              <button type="submit" class="btn btn-primary btn-block">Calculate</button>
+            </form>
+            <output id="bmi-result" class="tool-result" aria-live="polite"></output>
+          </article>
+
+          <!-- Water intake -->
+          <article class="tool-card">
+            <h3>Daily water goal</h3>
+            <p class="tool-hint">A rough target based on your body weight and activity.</p>
+            <form id="water-form" class="tool-form" novalidate>
+              <label>Weight (kg)
+                <input type="number" id="water-weight" min="10" max="400" step="0.1" inputmode="decimal" />
+              </label>
+              <label>Activity level
+                <select id="water-activity">
+                  <option value="0">Mostly resting</option>
+                  <option value="1" selected>Lightly active</option>
+                  <option value="2">Active most days</option>
+                  <option value="3">Intense training</option>
+                </select>
+              </label>
+              <button type="submit" class="btn btn-primary btn-block">Estimate</button>
+            </form>
+            <output id="water-result" class="tool-result" aria-live="polite"></output>
+          </article>
+
+          <!-- Breathing -->
+          <article class="tool-card">
+            <h3>Box breathing</h3>
+            <p class="tool-hint">Four-count breathing to reset your nervous system. Follow the ring.</p>
+            <div class="breath-wrap">
+              <div class="breath-ring" id="breath-ring">
+                <span class="breath-text" id="breath-text">Ready?</span>
+              </div>
+            </div>
+            <button type="button" id="breath-toggle" class="btn btn-primary btn-block">Start</button>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tips -->
+    <section id="tips" class="section">
+      <div class="container">
+        <header class="section-head">
+          <p class="eyebrow">Daily habits</p>
+          <h2>Ten tips that actually stick</h2>
+          <p class="section-sub">Pick one this week. Master it. Then add another.</p>
+        </header>
+        <ol class="tips">
+          <li><h3>Drink a glass of water when you wake</h3><p>Rehydrate before caffeine to kick-start your metabolism.</p></li>
+          <li><h3>Move for 10 minutes after meals</h3><p>A short walk blunts blood-sugar spikes and aids digestion.</p></li>
+          <li><h3>Aim for 7–9 hours of sleep</h3><p>Consistency matters more than the exact number — keep a schedule.</p></li>
+          <li><h3>Fill half your plate with vegetables</h3><p>The simplest rule for better nutrition without counting calories.</p></li>
+          <li><h3>Take breathing breaks</h3><p>Three slow breaths before a stressful task lowers your heart rate.</p></li>
+          <li><h3>Stand up every hour</h3><p>Break up long sitting to protect your back and circulation.</p></li>
+          <li><h3>Get morning sunlight</h3><p>Ten minutes outside helps set your sleep–wake rhythm.</p></li>
+          <li><h3>Limit screens before bed</h3><p>Dim the lights an hour before sleep for deeper rest.</p></li>
+          <li><h3>Cook one more meal at home</h3><p>You control the salt, sugar, and portions — small wins add up.</p></li>
+          <li><h3>Practice gratitude</h3><p>Noting one good thing daily is linked to better mood over time.</p></li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- About -->
+    <section id="about" class="section section-alt">
+      <div class="container about-grid">
+        <div>
+          <p class="eyebrow">Our approach</p>
+          <h2>Health, without the hype</h2>
+          <p>
+            Vitalis was built on a simple belief: wellness advice should be calm,
+            honest, and doable. We translate research into everyday habits and
+            leave the extremes behind.
+          </p>
+          <ul class="check-list">
+            <li>Evidence-informed, plainly explained</li>
+            <li>No shame, no crash plans, no gimmicks</li>
+            <li>Private tools that run entirely on your device</li>
+          </ul>
+        </div>
+        <blockquote class="quote">
+          “The greatest wealth is health.”
+          <cite>— Virgil</cite>
+        </blockquote>
+      </div>
+    </section>
+
+    <!-- Contact / CTA -->
+    <section id="contact" class="section cta">
+      <div class="container cta-inner">
+        <h2>Start your healthier week</h2>
+        <p>Drop your email and we'll send one practical tip every Monday. No spam, unsubscribe anytime.</p>
+        <form id="signup-form" class="signup" novalidate>
+          <label class="sr-only" for="email">Email address</label>
+          <input type="email" id="email" name="email" placeholder="you@example.com" required />
+          <button type="submit" class="btn btn-primary">Subscribe</button>
+        </form>
+        <p id="signup-msg" class="signup-msg" aria-live="polite"></p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-grid">
+      <div>
+        <a class="brand" href="#top">
+          <span class="brand-mark" aria-hidden="true">✦</span>
+          <span class="brand-name">Vitalis</span>
+        </a>
+        <p class="footer-note">Your companion for a healthier life.</p>
+      </div>
+      <nav aria-label="Footer">
+        <ul>
+          <li><a href="#services">Services</a></li>
+          <li><a href="#tools">Tools</a></li>
+          <li><a href="#tips">Tips</a></li>
+          <li><a href="#about">About</a></li>
+        </ul>
+      </nav>
+      <p class="disclaimer">
+        Vitalis provides general wellness information and is not a substitute for
+        professional medical advice. Always consult a qualified provider.
+      </p>
+    </div>
+    <div class="container copyright">
+      <p>© <span id="year"></span> Vitalis. Made with care.</p>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
