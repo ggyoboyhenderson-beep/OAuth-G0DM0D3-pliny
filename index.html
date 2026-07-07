@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Vitality — a modern health and wellness platform with practical tips, tools, and guidance for a healthier life." />
+  <title>Vitality — Health &amp; Wellness</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8C%BF%3C/text%3E%3C/svg%3E" />
+</head>
+<body>
+  <header class="site-header" id="top">
+    <nav class="nav container">
+      <a class="brand" href="#top">
+        <span class="brand-mark" aria-hidden="true">🌿</span>
+        <span>Vitality</span>
+      </a>
+      <button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+      <ul class="nav-links">
+        <li><a href="#pillars">Pillars</a></li>
+        <li><a href="#tools">Tools</a></li>
+        <li><a href="#tips">Daily Tips</a></li>
+        <li><a href="#articles">Articles</a></li>
+        <li><a class="nav-cta" href="#tools">Get Started</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main>
+    <!-- HERO -->
+    <section class="hero">
+      <div class="container hero-inner">
+        <div class="hero-copy">
+          <p class="eyebrow">Feel better, every day</p>
+          <h1>Small habits.<br /><em>Big</em> health.</h1>
+          <p class="lead">
+            Vitality brings movement, nutrition, sleep, and mindfulness into one
+            calm place — with practical tools and science-backed guidance you can
+            actually stick with.
+          </p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="#tools">Try the tools</a>
+            <a class="btn btn-ghost" href="#pillars">Explore pillars</a>
+          </div>
+          <dl class="hero-stats">
+            <div><dt>4</dt><dd>wellness pillars</dd></div>
+            <div><dt>10 min</dt><dd>a day is enough</dd></div>
+            <div><dt>100%</dt><dd>free &amp; private</dd></div>
+          </dl>
+        </div>
+        <div class="hero-card" aria-hidden="true">
+          <div class="pulse-ring"></div>
+          <div class="hero-metric">
+            <span class="hero-metric-label">Resting heart rate</span>
+            <span class="hero-metric-value">64<small>bpm</small></span>
+            <div class="spark">
+              <span></span><span></span><span></span><span></span>
+              <span></span><span></span><span></span><span></span>
+            </div>
+          </div>
+          <ul class="hero-badges">
+            <li>💧 6 / 8 glasses</li>
+            <li>🚶 7,240 steps</li>
+            <li>😴 7h 42m sleep</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- PILLARS -->
+    <section id="pillars" class="section">
+      <div class="container">
+        <header class="section-head">
+          <p class="eyebrow">The four pillars</p>
+          <h2>Health that fits your whole life</h2>
+          <p class="section-sub">Balance across these areas matters more than perfection in any one.</p>
+        </header>
+        <div class="grid pillars">
+          <article class="card pillar">
+            <span class="pillar-icon">🏃</span>
+            <h3>Movement</h3>
+            <p>Consistent, joyful activity — from brisk walks to strength work — keeps your body and mind resilient.</p>
+          </article>
+          <article class="card pillar">
+            <span class="pillar-icon">🥗</span>
+            <h3>Nutrition</h3>
+            <p>Whole foods, colorful plates, and mindful portions. No fads — just steady, nourishing choices.</p>
+          </article>
+          <article class="card pillar">
+            <span class="pillar-icon">😴</span>
+            <h3>Sleep</h3>
+            <p>Quality rest is the foundation of recovery, mood, and focus. Protect your 7–9 hours.</p>
+          </article>
+          <article class="card pillar">
+            <span class="pillar-icon">🧘</span>
+            <h3>Mindfulness</h3>
+            <p>A few calm breaths a day lowers stress and builds the awareness that drives every other habit.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- TOOLS -->
+    <section id="tools" class="section section-alt">
+      <div class="container">
+        <header class="section-head">
+          <p class="eyebrow">Interactive tools</p>
+          <h2>Quick checks, real insight</h2>
+          <p class="section-sub">Private by design — nothing you enter ever leaves your device.</p>
+        </header>
+
+        <div class="grid tools">
+          <!-- BMI -->
+          <article class="card tool">
+            <h3>BMI calculator</h3>
+            <p class="tool-desc">Estimate your body mass index from height and weight.</p>
+            <form id="bmi-form" class="tool-form">
+              <div class="field-row">
+                <label>Height (cm)
+                  <input type="number" id="bmi-height" min="50" max="260" step="0.1" placeholder="170" required />
+                </label>
+                <label>Weight (kg)
+                  <input type="number" id="bmi-weight" min="20" max="400" step="0.1" placeholder="68" required />
+                </label>
+              </div>
+              <button class="btn btn-primary" type="submit">Calculate</button>
+            </form>
+            <output id="bmi-result" class="tool-result" aria-live="polite"></output>
+          </article>
+
+          <!-- WATER -->
+          <article class="card tool">
+            <h3>Daily water goal</h3>
+            <p class="tool-desc">A simple starting target based on your body weight.</p>
+            <form id="water-form" class="tool-form">
+              <label>Weight (kg)
+                <input type="number" id="water-weight" min="20" max="400" step="0.1" placeholder="68" required />
+              </label>
+              <label>Activity level
+                <select id="water-activity">
+                  <option value="1">Light — mostly resting</option>
+                  <option value="1.1" selected>Moderate — some exercise</option>
+                  <option value="1.2">Active — daily workouts</option>
+                </select>
+              </label>
+              <button class="btn btn-primary" type="submit">Calculate</button>
+            </form>
+            <output id="water-result" class="tool-result" aria-live="polite"></output>
+          </article>
+
+          <!-- BREATHING -->
+          <article class="card tool tool-breathe">
+            <h3>Box breathing</h3>
+            <p class="tool-desc">Follow the circle: inhale, hold, exhale, hold — 4 seconds each.</p>
+            <div class="breathe-stage">
+              <div class="breathe-circle" id="breathe-circle">
+                <span id="breathe-text">Ready</span>
+              </div>
+            </div>
+            <button class="btn btn-primary" id="breathe-toggle" type="button">Begin</button>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- DAILY TIPS -->
+    <section id="tips" class="section">
+      <div class="container">
+        <header class="section-head">
+          <p class="eyebrow">Daily tip</p>
+          <h2>One small thing today</h2>
+        </header>
+        <div class="tip-card card">
+          <p id="tip-text" class="tip-text">Loading a tip for you…</p>
+          <button class="btn btn-ghost" id="tip-next" type="button">Another tip →</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ARTICLES -->
+    <section id="articles" class="section section-alt">
+      <div class="container">
+        <header class="section-head">
+          <p class="eyebrow">From the journal</p>
+          <h2>Read, learn, thrive</h2>
+        </header>
+        <div class="grid articles">
+          <article class="card article">
+            <div class="article-tag">Nutrition</div>
+            <h3>The plate method, simplified</h3>
+            <p>Fill half your plate with vegetables, a quarter with protein, a quarter with whole grains. That's it.</p>
+            <span class="article-meta">5 min read</span>
+          </article>
+          <article class="card article">
+            <div class="article-tag">Sleep</div>
+            <h3>Winding down the smart way</h3>
+            <p>A consistent bedtime and a screen-free hour before sleep can transform how rested you feel.</p>
+            <span class="article-meta">4 min read</span>
+          </article>
+          <article class="card article">
+            <div class="article-tag">Movement</div>
+            <h3>Why walking wins</h3>
+            <p>The most underrated exercise is also the most accessible. Aim for a daily walk you enjoy.</p>
+            <span class="article-meta">6 min read</span>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="cta">
+      <div class="container cta-inner">
+        <h2>Your healthiest year starts with one habit.</h2>
+        <p>Pick a single pillar, use a tool, and come back tomorrow. Momentum does the rest.</p>
+        <a class="btn btn-light" href="#tools">Start now</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <div class="footer-brand">
+        <span class="brand-mark" aria-hidden="true">🌿</span>
+        <span>Vitality</span>
+      </div>
+      <p class="footer-note">
+        Vitality is for general education and wellness. It is not medical advice.
+        Always consult a qualified healthcare professional about your health.
+      </p>
+      <p class="footer-copy">© <span id="year"></span> Vitality. Built with care.</p>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
