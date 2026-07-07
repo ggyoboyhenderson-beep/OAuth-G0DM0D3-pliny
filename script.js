@@ -1,144 +1,200 @@
-// ===== Vitality — health website interactions =====
+/* ===== Vitality Health — interactivity ===== */
 (function () {
   "use strict";
 
-  // ---- Footer year ----
+  /* Footer year */
   var yearEl = document.getElementById("year");
   if (yearEl) yearEl.textContent = new Date().getFullYear();
 
-  // ---- Mobile nav ----
+  /* Mobile nav toggle */
   var toggle = document.querySelector(".nav-toggle");
-  var links = document.querySelector(".nav-links");
-  if (toggle && links) {
+  var menu = document.getElementById("nav-menu");
+  if (toggle && menu) {
     toggle.addEventListener("click", function () {
-      var open = links.classList.toggle("open");
+      var open = menu.classList.toggle("open");
       toggle.setAttribute("aria-expanded", String(open));
     });
-    links.addEventListener("click", function (e) {
+    menu.addEventListener("click", function (e) {
       if (e.target.tagName === "A") {
-        links.classList.remove("open");
+        menu.classList.remove("open");
         toggle.setAttribute("aria-expanded", "false");
       }
     });
   }
 
-  // ---- BMI calculator ----
+  /* ===== Habit tracker (persisted in localStorage, reset daily) ===== */
+  var STORAGE_KEY = "vh-habits";
+  var boxes = Array.prototype.slice.call(
+    document.querySelectorAll("#habit-list input[type=checkbox]")
+  );
+  var ring = document.getElementById("progress-ring");
+  var ringText = document.getElementById("progress-text");
+  var msg = document.getElementById("progress-msg");
+  var resetBtn = document.getElementById("reset-habits");
+
+  var messages = [
+    "Let's build a great day.",
+    "Nice start — keep going!",
+    "You're building momentum.",
+    "Halfway there. Strong work!",
+    "Almost done — finish strong.",
+    "So close!",
+    "Perfect day. Well done! 🎉",
+  ];
+
+  function todayKey() {
+    return new Date().toISOString().slice(0, 10);
+  }
+
+  function loadState() {
+    try {
+      var raw = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+      if (raw.date !== todayKey()) return {};
+      return raw.habits || {};
+    } catch (e) {
+      return {};
+    }
+  }
+
+  function saveState() {
+    var habits = {};
+    boxes.forEach(function (b) {
+      habits[b.dataset.habit] = b.checked;
+    });
+    try {
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({ date: todayKey(), habits: habits })
+      );
+    } catch (e) {
+      /* storage unavailable — non-fatal */
+    }
+  }
+
+  function render() {
+    if (!boxes.length) return;
+    var done = boxes.filter(function (b) {
+      return b.checked;
+    }).length;
+    var pct = Math.round((done / boxes.length) * 100);
+    if (ring) ring.style.setProperty("--pct", pct);
+    if (ringText) ringText.textContent = pct + "%";
+    if (msg) {
+      var idx = Math.round((done / boxes.length) * (messages.length - 1));
+      msg.textContent = messages[idx];
+    }
+  }
+
+  if (boxes.length) {
+    var saved = loadState();
+    boxes.forEach(function (b) {
+      if (saved[b.dataset.habit]) b.checked = true;
+      b.addEventListener("change", function () {
+        saveState();
+        render();
+      });
+    });
+    render();
+
+    if (resetBtn) {
+      resetBtn.addEventListener("click", function () {
+        boxes.forEach(function (b) {
+          b.checked = false;
+        });
+        saveState();
+        render();
+      });
+    }
+  }
+
+  /* ===== BMI calculator ===== */
   var bmiForm = document.getElementById("bmi-form");
+  var heightInput = document.getElementById("height");
+  var weightInput = document.getElementById("weight");
+  var heightLabel = document.getElementById("height-label");
+  var weightLabel = document.getElementById("weight-label");
+  var resultBox = document.getElementById("bmi-result");
+  var valueEl = document.getElementById("bmi-value");
+  var categoryEl = document.getElementById("bmi-category");
+  var unitBtns = Array.prototype.slice.call(document.querySelectorAll(".unit-btn"));
+  var unit = "metric";
+
+  function setUnit(next) {
+    unit = next;
+    unitBtns.forEach(function (b) {
+      b.classList.toggle("active", b.dataset.unit === next);
+    });
+    if (next === "metric") {
+      heightLabel.textContent = "Height (cm)";
+      weightLabel.textContent = "Weight (kg)";
+      heightInput.placeholder = "170";
+      weightInput.placeholder = "68";
+    } else {
+      heightLabel.textContent = "Height (in)";
+      weightLabel.textContent = "Weight (lb)";
+      heightInput.placeholder = "67";
+      weightInput.placeholder = "150";
+    }
+    heightInput.value = "";
+    weightInput.value = "";
+    if (resultBox) resultBox.hidden = true;
+  }
+
+  unitBtns.forEach(function (b) {
+    b.addEventListener("click", function () {
+      setUnit(b.dataset.unit);
+    });
+  });
+
+  function classify(bmi) {
+    if (bmi < 18.5) return { label: "Underweight", cls: "cat-under" };
+    if (bmi < 25) return { label: "Normal weight", cls: "cat-normal" };
+    if (bmi < 30) return { label: "Overweight", cls: "cat-over" };
+    return { label: "Obese", cls: "cat-obese" };
+  }
+
   if (bmiForm) {
     bmiForm.addEventListener("submit", function (e) {
       e.preventDefault();
-      var h = parseFloat(document.getElementById("bmi-height").value);
-      var w = parseFloat(document.getElementById("bmi-weight").value);
-      var out = document.getElementById("bmi-result");
-      if (!h || !w || h <= 0 || w <= 0) {
-        out.className = "tool-result show";
-        out.textContent = "Please enter a valid height and weight.";
+      var h = parseFloat(heightInput.value);
+      var w = parseFloat(weightInput.value);
+      if (!(h > 0) || !(w > 0)) {
+        resultBox.hidden = false;
+        valueEl.textContent = "–";
+        categoryEl.textContent = "Please enter valid height and weight.";
+        categoryEl.className = "bmi-category cat-over";
         return;
       }
-      var m = h / 100;
-      var bmi = w / (m * m);
-      var cat, note;
-      if (bmi < 18.5) { cat = "Underweight"; note = "Consider nourishing, calorie-dense whole foods."; }
-      else if (bmi < 25) { cat = "Healthy range"; note = "Great — keep up your balanced habits."; }
-      else if (bmi < 30) { cat = "Overweight"; note = "Small, steady changes add up over time."; }
-      else { cat = "Obese"; note = "A healthcare professional can help you plan."; }
-      out.className = "tool-result show";
-      out.innerHTML =
-        "Your BMI is <strong>" + bmi.toFixed(1) + "</strong><br />" +
-        "<span class='cat'>" + cat + "</span> — " + note;
-    });
-  }
-
-  // ---- Water intake ----
-  var waterForm = document.getElementById("water-form");
-  if (waterForm) {
-    waterForm.addEventListener("submit", function (e) {
-      e.preventDefault();
-      var w = parseFloat(document.getElementById("water-weight").value);
-      var factor = parseFloat(document.getElementById("water-activity").value);
-      var out = document.getElementById("water-result");
-      if (!w || w <= 0) {
-        out.className = "tool-result show";
-        out.textContent = "Please enter a valid weight.";
-        return;
-      }
-      // ~35 ml per kg, scaled by activity
-      var ml = w * 35 * factor;
-      var liters = ml / 1000;
-      var glasses = Math.round(ml / 250);
-      out.className = "tool-result show";
-      out.innerHTML =
-        "Aim for about <strong>" + liters.toFixed(1) + " L</strong><br />" +
-        "roughly " + glasses + " glasses (250 ml) through the day.";
-    });
-  }
-
-  // ---- Box breathing ----
-  var breatheToggle = document.getElementById("breathe-toggle");
-  var circle = document.getElementById("breathe-circle");
-  var text = document.getElementById("breathe-text");
-  if (breatheToggle && circle && text) {
-    var phases = [
-      { label: "Inhale", grow: true },
-      { label: "Hold", grow: true },
-      { label: "Exhale", grow: false },
-      { label: "Hold", grow: false }
-    ];
-    var idx = 0;
-    var timer = null;
-    var running = false;
-
-    function step() {
-      var p = phases[idx];
-      text.textContent = p.label;
-      circle.classList.toggle("grow", p.grow);
-      idx = (idx + 1) % phases.length;
-    }
-
-    breatheToggle.addEventListener("click", function () {
-      running = !running;
-      if (running) {
-        breatheToggle.textContent = "Stop";
-        idx = 0;
-        step();
-        timer = setInterval(step, 4000);
+      var bmi;
+      if (unit === "metric") {
+        var m = h / 100;
+        bmi = w / (m * m);
       } else {
-        breatheToggle.textContent = "Begin";
-        clearInterval(timer);
-        circle.classList.remove("grow");
-        text.textContent = "Ready";
+        bmi = (703 * w) / (h * h);
       }
+      bmi = Math.round(bmi * 10) / 10;
+      var c = classify(bmi);
+      resultBox.hidden = false;
+      valueEl.textContent = bmi.toFixed(1);
+      categoryEl.textContent = c.label;
+      categoryEl.className = "bmi-category " + c.cls;
     });
   }
 
-  // ---- Daily tips ----
-  var tips = [
-    "Drink a glass of water right after you wake up to rehydrate.",
-    "Take a 5-minute stretch break for every hour you sit.",
-    "Add one extra serving of vegetables to your next meal.",
-    "Step outside for a few minutes of natural morning light.",
-    "Swap one sugary drink today for water or unsweetened tea.",
-    "Try a 10-minute walk after your largest meal.",
-    "Put your phone away 30 minutes before bed for better sleep.",
-    "Practice three slow, deep breaths before a stressful task.",
-    "Stand up and roll your shoulders to release tension.",
-    "Choose stairs over the elevator when you can.",
-    "Prep a healthy snack now so it's ready when hunger hits.",
-    "Write down one thing you're grateful for today.",
-    "Aim to finish eating dinner a few hours before bedtime.",
-    "Keep a water bottle within arm's reach all day."
-  ];
-  var tipText = document.getElementById("tip-text");
-  var tipNext = document.getElementById("tip-next");
-  var lastTip = -1;
-  function showTip() {
-    if (!tipText) return;
-    var i;
-    do { i = Math.floor(Math.random() * tips.length); }
-    while (i === lastTip && tips.length > 1);
-    lastTip = i;
-    tipText.textContent = tips[i];
+  /* ===== Newsletter (client-side demo only) ===== */
+  var nlForm = document.getElementById("newsletter-form");
+  var nlMsg = document.getElementById("newsletter-msg");
+  if (nlForm) {
+    nlForm.addEventListener("submit", function (e) {
+      e.preventDefault();
+      var email = document.getElementById("email").value.trim();
+      var valid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+      if (!valid) {
+        nlMsg.textContent = "Please enter a valid email address.";
+        return;
+      }
+      nlMsg.textContent = "Thanks for subscribing! Check your inbox soon. 🌿";
+      nlForm.reset();
+    });
   }
-  if (tipText) showTip();
-  if (tipNext) tipNext.addEventListener("click", showTip);
 })();

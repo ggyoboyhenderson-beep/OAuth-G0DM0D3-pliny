@@ -1,21 +1,20 @@
-# 🌿 Vitality — Health &amp; Wellness Website
+# Vitality Health 🌿
 
-A calm, modern, single-page health and wellness site. Built as a fully
-self-contained static site — no build step, no dependencies, no tracking.
+A clean, responsive **health & wellness website** — evidence-based guidance plus a few handy interactive tools. Built with plain HTML, CSS, and vanilla JavaScript, so it runs anywhere with no build step.
 
 ## Features
 
-- **Responsive landing page** with a hero, four wellness pillars, articles, and a call to action.
-- **Interactive tools (all client-side, private):**
-  - **BMI calculator** — with a healthy-range interpretation.
-  - **Daily water goal** — estimated from body weight and activity level.
-  - **Box breathing** — an animated 4-4-4-4 breathing guide.
-- **Daily tip generator** — a rotating set of practical wellness nudges.
-- **Accessible & fast** — semantic HTML, keyboard-friendly, `prefers-reduced-motion` support.
+- **Hero + wellness pillars** — Movement, Nutrition, Sleep, and Mind.
+- **Daily habit tracker** — check off habits with a live progress ring; state is saved in `localStorage` and resets each day.
+- **BMI calculator** — metric/imperial toggle with category classification.
+- **Articles section** and **newsletter signup** (client-side demo).
+- Fully **responsive** with a mobile nav, accessible markup, and reduced-motion support.
+
+> ⚕️ This site is for general education only and is **not medical advice**. Consult a qualified healthcare professional for personal guidance.
 
 ## Run it
 
-No install needed. Just open `index.html` in a browser, or serve locally:
+No dependencies. Just open the file, or serve the folder:
 
 ```bash
 python3 -m http.server 8000
@@ -27,10 +26,5 @@ python3 -m http.server 8000
 | File | Purpose |
 |------|---------|
 | `index.html` | Page structure and content |
-| `styles.css` | Design system, layout, and animations |
-| `script.js` | Tools, tips, and navigation logic |
-
-## Note
-
-Vitality is for general education and wellness only. It is **not medical
-advice**. Always consult a qualified healthcare professional about your health.
+| `styles.css` | Styling, layout, responsive rules |
+| `script.js`  | Habit tracker, BMI tool, nav, newsletter |
