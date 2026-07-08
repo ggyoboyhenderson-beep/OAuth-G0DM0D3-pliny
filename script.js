@@ -1901,6 +1901,48 @@
   if (topicSearch) topicSearch.addEventListener("input", renderTopics);
   renderTopics();
 
+  /* =====================================================================
+     App install (PWA) — offline service worker + install button
+     ===================================================================== */
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", function () {
+      navigator.serviceWorker.register("./sw.js").catch(function () {
+        /* offline support unavailable — the site still works normally */
+      });
+    });
+  }
+  var installBtn = document.getElementById("install-btn");
+  var deferredInstall = null;
+  var isStandalone = window.matchMedia("(display-mode: standalone)").matches ||
+    window.navigator.standalone === true;
+  window.addEventListener("beforeinstallprompt", function (e) {
+    e.preventDefault();
+    deferredInstall = e;
+    if (installBtn && !isStandalone) installBtn.hidden = false;
+  });
+  // iOS Safari never fires beforeinstallprompt — show the button with instructions.
+  var isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  if (installBtn && isIOS && !isStandalone) installBtn.hidden = false;
+  if (installBtn) {
+    installBtn.addEventListener("click", function () {
+      if (deferredInstall) {
+        deferredInstall.prompt();
+        deferredInstall.userChoice.finally(function () {
+          deferredInstall = null;
+          installBtn.hidden = true;
+        });
+      } else {
+        showToast("📲", "Install Vitality", isIOS
+          ? "In Safari: tap Share, then \"Add to Home Screen\"."
+          : "In your browser menu, choose \"Install app\" or \"Add to Home Screen\".", 9000);
+      }
+    });
+  }
+  window.addEventListener("appinstalled", function () {
+    if (installBtn) installBtn.hidden = true;
+    showToast("🌿", "Installed!", "Vitality Health is now on your home screen.");
+  });
+
   /* ===== Newsletter (client-side demo only) ===== */
   var nlForm = document.getElementById("newsletter-form");
   var nlMsg = document.getElementById("newsletter-msg");
