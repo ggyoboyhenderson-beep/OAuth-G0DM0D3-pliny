@@ -515,9 +515,10 @@
 
   function addEntry(type, emoji, text, value, unit) {
     journal.push({ id: uid(), ts: Date.now(), type: type, emoji: emoji, text: text, value: value, unit: unit });
-    if (journal.length > 200) journal = journal.slice(-200);
+    if (journal.length > 400) journal = journal.slice(-400);
     writeStore(J_KEY, journal);
     renderAll();
+    document.dispatchEvent(new CustomEvent("vh:journal-changed"));
   }
 
   if (reminderList) {
@@ -536,6 +537,7 @@
     journal = [];
     writeStore(J_KEY, journal);
     renderAll();
+    document.dispatchEvent(new CustomEvent("vh:journal-changed"));
   });
   var remindersClear = document.getElementById("reminders-clear");
   if (remindersClear) remindersClear.addEventListener("click", function () {
@@ -857,6 +859,302 @@
 
   renderChips();
   renderAll();
+
+  /* ===== Beginner workout moves ===== */
+  var MOVES = [
+    { emoji: "🪑", name: "Chair sit-to-stand", reps: "3 × 10", desc: "Sit tall in a sturdy chair, then stand up without using your hands. Sit back down slowly.", tip: "Builds the same strength you use every day." },
+    { emoji: "🧱", name: "Wall push-up", reps: "3 × 8", desc: "Hands on a wall, shoulder-width. Bend your elbows to lean in, then push back.", tip: "Move to knees on the floor when it feels easy." },
+    { emoji: "🍑", name: "Glute bridge", reps: "3 × 10", desc: "Lie on your back, knees bent. Squeeze your glutes and lift your hips, then lower.", tip: "Keep the lift slow — no arching your lower back." },
+    { emoji: "🐕", name: "Bird-dog", reps: "2 × 6 / side", desc: "On hands and knees, extend the opposite arm and leg, hold a beat, return.", tip: "Great for balance and a stable core." },
+    { emoji: "🏋️", name: "Bodyweight squat", reps: "3 × 8", desc: "Feet shoulder-width, sit your hips back and down as if reaching for a chair, then stand.", tip: "Keep your heels planted and chest up." },
+    { emoji: "🧘", name: "Knee plank", reps: "3 × 20 sec", desc: "Forearms down, knees on the floor, body in a straight line. Hold and breathe.", tip: "Squeeze your tummy — don't let your hips sag." },
+    { emoji: "🦵", name: "Calf raise", reps: "3 × 12", desc: "Stand tall, rise onto the balls of your feet, then lower with control.", tip: "Hold a wall for balance if you need to." },
+    { emoji: "🐞", name: "Dead bug", reps: "2 × 8 / side", desc: "On your back, arms up. Lower the opposite arm and leg slowly, then switch.", tip: "Press your lower back gently into the floor." },
+  ];
+  var movesGrid = document.getElementById("moves-grid");
+  if (movesGrid) {
+    movesGrid.innerHTML = MOVES.map(function (m) {
+      return '<article class="card move"><span class="move-emoji">' + m.emoji +
+        "</span><h4>" + m.name + '</h4><p class="move-reps">' + m.reps + "</p><p>" +
+        m.desc + '</p><p class="move-tip"><strong>Tip:</strong> ' + m.tip + "</p></article>";
+    }).join("");
+  }
+
+  /* =====================================================================
+     Trends — small-multiple charts built from the health journal.
+     Single-series per metric; validated hues; direct labels + hover.
+     ===================================================================== */
+  var trendsGrid = document.getElementById("trends-grid");
+  var trendsEmpty = document.getElementById("trends-empty");
+  var rangeToggle = document.getElementById("range-toggle");
+  var sampleBtn = document.getElementById("sample-data");
+  var rangeDays = 7;
+
+  // One shared tooltip element for all charts.
+  var chartTip = document.createElement("div");
+  chartTip.className = "chart-tip";
+  document.body.appendChild(chartTip);
+
+  function dayKeyFromDate(d) { return d.toISOString().slice(0, 10); }
+  function shortDay(dk) {
+    var d = new Date(dk + "T00:00:00");
+    return d.toLocaleDateString([], { weekday: "short" }).slice(0, 2);
+  }
+  function shortDate(dk) {
+    var d = new Date(dk + "T00:00:00");
+    return d.toLocaleDateString([], { month: "short", day: "numeric" });
+  }
+
+  // Build an array of the last N day-keys (oldest → newest).
+  function lastNDays(n) {
+    var out = [];
+    var now = new Date();
+    for (var i = n - 1; i >= 0; i--) {
+      var d = new Date(now);
+      d.setDate(now.getDate() - i);
+      out.push(dayKeyFromDate(d));
+    }
+    return out;
+  }
+
+  // Aggregate journal entries into per-day values for a metric.
+  function seriesFor(type, days, agg) {
+    var byDay = {};
+    journal.forEach(function (e) {
+      if (e.type !== type) return;
+      var dk = new Date(e.ts).toISOString().slice(0, 10);
+      if (!byDay[dk]) byDay[dk] = [];
+      byDay[dk].push(e.value != null ? e.value : 1);
+    });
+    return days.map(function (dk) {
+      var vals = byDay[dk];
+      if (!vals || !vals.length) return { day: dk, value: null };
+      var v = agg === "sum" ? vals.reduce(function (a, b) { return a + b; }, 0)
+        : agg === "count" ? vals.length
+        : vals[vals.length - 1]; // "last"
+      return { day: dk, value: v };
+    });
+  }
+
+  var CHART_DEFS = [
+    { type: "weight", title: "Weight", emoji: "⚖️", unit: "kg", kind: "line", agg: "last", series: "#2a78d6", seriesDark: "#3987e5", fmt: function (v) { return v; } },
+    { type: "water", title: "Water", emoji: "💧", unit: "glasses", kind: "bar", agg: "sum", series: "#199e70", seriesDark: "#199e70", fmt: function (v) { return v; } },
+    { type: "sleep", title: "Sleep", emoji: "😴", unit: "hours", kind: "bar", agg: "last", series: "#4a3aa7", seriesDark: "#9085e9", fmt: function (v) { return v; } },
+    { type: "steps", title: "Steps", emoji: "👟", unit: "steps", kind: "bar", agg: "last", series: "#eb6834", seriesDark: "#d95926", fmt: function (v) { return Number(v).toLocaleString(); } },
+  ];
+
+  function isDark() { return document.documentElement.getAttribute("data-theme") === "dark"; }
+
+  function niceMax(v) {
+    if (v <= 0) return 1;
+    var pow = Math.pow(10, Math.floor(Math.log10(v)));
+    var n = v / pow;
+    var step = n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10;
+    return step * pow;
+  }
+
+  function svgEl(tag, attrs) {
+    var el = document.createElementNS("http://www.w3.org/2000/svg", tag);
+    for (var k in attrs) el.setAttribute(k, attrs[k]);
+    return el;
+  }
+
+  function buildChart(def, days) {
+    var data = seriesFor(def.type, days, def.agg);
+    var present = data.filter(function (d) { return d.value != null; });
+    var color = isDark() ? def.seriesDark : def.series;
+
+    var card = document.createElement("article");
+    card.className = "card chart-card";
+
+    var latest = present.length ? present[present.length - 1].value : null;
+    var prev = present.length > 1 ? present[present.length - 2].value : null;
+    var deltaHtml = "";
+    if (latest != null && prev != null && prev !== 0) {
+      var diff = latest - prev;
+      var cls = diff > 0 ? "up" : diff < 0 ? "down" : "flat";
+      // For weight, down is typically framed neutrally; keep arrows factual.
+      var arrow = diff > 0 ? "▲" : diff < 0 ? "▼" : "▬";
+      deltaHtml = '<span class="chart-delta ' + cls + '">' + arrow + " " + def.fmt(Math.abs(Math.round(diff * 10) / 10)) + "</span>";
+    }
+    var heroHtml = latest != null
+      ? def.fmt(latest) + ' <small>' + def.unit + "</small>"
+      : '<small>no data yet</small>';
+
+    var head = document.createElement("div");
+    head.className = "chart-head";
+    head.innerHTML = "<h3>" + def.emoji + " " + def.title + "</h3>" +
+      '<span class="chart-hero">' + heroHtml + "</span>";
+    card.appendChild(head);
+    if (deltaHtml) {
+      var deltaWrap = document.createElement("div");
+      deltaWrap.innerHTML = deltaHtml + ' <span class="chart-caption" style="display:inline">vs previous</span>';
+      card.appendChild(deltaWrap);
+    }
+
+    if (!present.length) {
+      var empty = document.createElement("p");
+      empty.className = "chart-empty";
+      empty.textContent = "No " + def.title.toLowerCase() + " logged in this range.";
+      card.appendChild(empty);
+      return card;
+    }
+
+    // Geometry
+    var W = 320, H = 150, padL = 30, padR = 12, padT = 14, padB = 22;
+    var plotW = W - padL - padR, plotH = H - padT - padB;
+    var maxRaw = Math.max.apply(null, present.map(function (d) { return d.value; }));
+    var minRaw = Math.min.apply(null, present.map(function (d) { return d.value; }));
+    var yMax, yMin;
+    if (def.kind === "bar") { yMin = 0; yMax = niceMax(maxRaw); }
+    else { // line: pad around min/max
+      var span = maxRaw - minRaw || Math.max(1, maxRaw * 0.1);
+      yMin = Math.max(0, minRaw - span * 0.4);
+      yMax = maxRaw + span * 0.4;
+      if (yMax === yMin) yMax = yMin + 1;
+    }
+    function xAt(i) { return padL + (days.length === 1 ? plotW / 2 : (i / (days.length - 1)) * plotW); }
+    function yAt(v) { return padT + plotH - ((v - yMin) / (yMax - yMin)) * plotH; }
+
+    var svg = svgEl("svg", { class: "chart-svg", viewBox: "0 0 " + W + " " + H, role: "img", "aria-label": def.title + " over the last " + days.length + " days" });
+
+    // Gridlines + y labels (3 lines)
+    for (var g = 0; g <= 2; g++) {
+      var gv = yMin + (yMax - yMin) * (g / 2);
+      var gy = yAt(gv);
+      svg.appendChild(svgEl("line", { class: "grid-line", x1: padL, y1: gy, x2: W - padR, y2: gy }));
+      var lbl = svgEl("text", { class: "axis-label", x: padL - 5, y: gy + 3, "text-anchor": "end" });
+      lbl.textContent = def.type === "steps" ? Math.round(gv / 1000) + "k" : Math.round(gv * 10) / 10;
+      svg.appendChild(lbl);
+    }
+
+    // X labels (thinned to avoid collisions)
+    var everyX = days.length > 10 ? Math.ceil(days.length / 7) : 1;
+    days.forEach(function (dk, i) {
+      if (i % everyX !== 0 && i !== days.length - 1) return;
+      var t = svgEl("text", { class: "axis-label", x: xAt(i), y: H - 6, "text-anchor": "middle" });
+      t.textContent = days.length > 14 ? shortDate(dk).split(" ")[1] : shortDay(dk);
+      svg.appendChild(t);
+    });
+
+    if (def.kind === "bar") {
+      var slot = plotW / days.length;
+      var bw = Math.max(4, Math.min(26, slot - 6));
+      data.forEach(function (d, i) {
+        if (d.value == null) return;
+        var x = xAt(i) - bw / 2;
+        var y = yAt(d.value);
+        var h = padT + plotH - y;
+        var rect = svgEl("rect", { class: "bar", x: x, y: y, width: bw, height: Math.max(2, h), rx: 4, fill: color });
+        svg.appendChild(rect);
+        attachHover(rect, d, def, dk_label(d.day));
+      });
+    } else {
+      // line path over present points (skip gaps)
+      var dParts = [];
+      present.forEach(function (d, k) {
+        var i = days.indexOf(d.day);
+        dParts.push((k === 0 ? "M" : "L") + xAt(i) + " " + yAt(d.value));
+      });
+      svg.appendChild(svgEl("path", { d: dParts.join(" "), fill: "none", stroke: color, "stroke-width": 2, "stroke-linejoin": "round", "stroke-linecap": "round" }));
+      data.forEach(function (d, i) {
+        if (d.value == null) return;
+        var dot = svgEl("circle", { class: "dot", cx: xAt(i), cy: yAt(d.value), r: 3.5, fill: color, stroke: isDark() ? "#16241d" : "#fff", "stroke-width": 1.5 });
+        svg.appendChild(dot);
+        attachHover(dot, d, def, dk_label(d.day));
+      });
+    }
+
+    // Direct-label the most recent value
+    var lastIdx = days.indexOf(present[present.length - 1].day);
+    var lv = present[present.length - 1].value;
+    var vlabel = svgEl("text", { class: "value-label", x: xAt(lastIdx), y: yAt(lv) - 8, "text-anchor": "middle" });
+    vlabel.textContent = def.type === "steps" ? Number(lv).toLocaleString() : lv;
+    svg.appendChild(vlabel);
+
+    card.appendChild(svg);
+
+    var cap = document.createElement("p");
+    cap.className = "chart-caption";
+    cap.textContent = present.length + " day" + (present.length === 1 ? "" : "s") + " logged · hover for details";
+    card.appendChild(cap);
+    return card;
+
+    function dk_label(dk) { return shortDate(dk); }
+  }
+
+  function attachHover(mark, d, def, dateLabel) {
+    function move(ev) {
+      var val = def.type === "steps" ? Number(d.value).toLocaleString() : d.value;
+      chartTip.textContent = dateLabel + " · " + val + " " + def.unit;
+      chartTip.classList.add("show");
+      var x = (ev.touches ? ev.touches[0].clientX : ev.clientX) + 12;
+      var y = (ev.touches ? ev.touches[0].clientY : ev.clientY) - 34;
+      chartTip.style.left = Math.min(x, window.innerWidth - 160) + "px";
+      chartTip.style.top = y + "px";
+    }
+    mark.addEventListener("mouseenter", move);
+    mark.addEventListener("mousemove", move);
+    mark.addEventListener("mouseleave", function () { chartTip.classList.remove("show"); });
+  }
+
+  function renderTrends() {
+    if (!trendsGrid) return;
+    var days = lastNDays(rangeDays);
+    var hasAny = journal.some(function (e) {
+      return CHART_DEFS.some(function (c) { return c.type === e.type; });
+    });
+    if (trendsEmpty) trendsEmpty.hidden = hasAny;
+    trendsGrid.innerHTML = "";
+    if (!hasAny) return;
+    CHART_DEFS.forEach(function (def) {
+      trendsGrid.appendChild(buildChart(def, days));
+    });
+  }
+
+  if (rangeToggle) {
+    rangeToggle.addEventListener("click", function (e) {
+      var btn = e.target.closest(".range-btn");
+      if (!btn) return;
+      rangeDays = parseInt(btn.dataset.days, 10);
+      rangeToggle.querySelectorAll(".range-btn").forEach(function (b) {
+        b.classList.toggle("active", b === btn);
+      });
+      renderTrends();
+    });
+  }
+
+  // Sample data — realistic-ish 14 days so trends are previewable.
+  function addSampleData() {
+    var days = lastNDays(14);
+    var weight = 74 + Math.random();
+    days.forEach(function (dk, i) {
+      var base = new Date(dk + "T09:00:00").getTime();
+      weight -= 0.05 + Math.random() * 0.12; // gentle downward trend
+      pushSample(base, "weight", "⚖️", "Weight: " + weight.toFixed(1) + " kg", Math.round(weight * 10) / 10, "kg");
+      var glasses = 4 + Math.floor(Math.random() * 5);
+      pushSample(base + 3600000, "water", "💧", "Drank water", glasses, "glass");
+      var sleep = Math.round((6 + Math.random() * 2.5) * 10) / 10;
+      pushSample(base - 3600000, "sleep", "😴", "Slept " + sleep + " h", sleep, "h");
+      var steps = 3500 + Math.floor(Math.random() * 8000);
+      pushSample(base + 7200000, "steps", "👟", steps.toLocaleString() + " steps", steps, "steps");
+      if (i % 3 === 0) pushSample(base + 5400000, "workout", "🏋️", "Workout: a walk", 30, "min");
+    });
+    if (journal.length > 400) journal = journal.slice(-400);
+    writeStore(J_KEY, journal);
+    renderAll();
+    renderTrends();
+  }
+  function pushSample(ts, type, emoji, text, value, unit) {
+    journal.push({ id: uid(), ts: ts, type: type, emoji: emoji, text: text, value: value, unit: unit });
+  }
+  if (sampleBtn) sampleBtn.addEventListener("click", addSampleData);
+
+  // Re-render charts when the journal changes or the theme flips.
+  document.addEventListener("vh:journal-changed", renderTrends);
+  if (themeToggle) themeToggle.addEventListener("click", function () { setTimeout(renderTrends, 0); });
+
+  renderTrends();
 
   /* ===== Newsletter (client-side demo only) ===== */
   var nlForm = document.getElementById("newsletter-form");

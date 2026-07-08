@@ -36,7 +36,8 @@
         <li><a href="#water">Water</a></li>
         <li><a href="#workout">Workouts</a></li>
         <li><a href="#journal">Journal</a></li>
-        <li><a href="#bmi">BMI Tool</a></li>
+        <li><a href="#trends">Trends</a></li>
+        <li><a href="#bmi">BMI</a></li>
         <li>
           <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Toggle dark mode" title="Toggle dark mode">
             <span class="theme-icon" aria-hidden="true">🌙</span>
@@ -226,6 +227,47 @@
       </div>
     </section>
 
+    <!-- Beginner workouts -->
+    <section id="beginner" class="section">
+      <div class="container">
+        <div class="section-head">
+          <h2>New to exercise? Start here</h2>
+          <p>No gym, no equipment, no experience needed. These moves are gentle, safe, and build the habit. Go at your own pace.</p>
+        </div>
+
+        <div class="starter card">
+          <div class="starter-copy">
+            <span class="starter-badge">15-minute starter routine</span>
+            <h3>Your first full-body workout</h3>
+            <p>Do this circuit <strong>2–3 times a week</strong>. Complete one round of each move, rest a minute, then repeat 2–3 rounds. Move slowly and breathe.</p>
+            <ol class="starter-steps">
+              <li>March in place — <span>1 min warm-up</span></li>
+              <li>Chair sit-to-stands — <span>10 reps</span></li>
+              <li>Wall or knee push-ups — <span>8 reps</span></li>
+              <li>Glute bridges — <span>10 reps</span></li>
+              <li>Bird-dog — <span>6 each side</span></li>
+              <li>Knee plank — <span>hold 20 sec</span></li>
+              <li>Calf raises — <span>12 reps</span></li>
+            </ol>
+            <a href="#workout" class="btn btn-small">Ready for more? Build a plan →</a>
+          </div>
+          <div class="starter-tips">
+            <h4>First-timer tips</h4>
+            <ul>
+              <li>🔥 <strong>Warm up</strong> for a couple of minutes first.</li>
+              <li>🐢 <strong>Start light.</strong> Fewer reps done well beats many done poorly.</li>
+              <li>💧 <strong>Rest &amp; hydrate</strong> between rounds.</li>
+              <li>🛑 <strong>Stop if it hurts</strong> (a normal "working" burn is fine; sharp pain is not).</li>
+              <li>📅 <strong>Rest days count</strong> — muscles grow while you recover.</li>
+            </ul>
+          </div>
+        </div>
+
+        <h3 class="moves-title">The moves, explained</h3>
+        <div class="grid moves-grid" id="moves-grid"><!-- exercise cards injected by script.js --></div>
+      </div>
+    </section>
+
     <!-- BMI Calculator -->
     <section id="bmi" class="section">
       <div class="container">
@@ -288,8 +330,30 @@
       </div>
     </section>
 
+    <!-- Trends (charts of journal data over time) -->
+    <section id="trends" class="section">
+      <div class="container">
+        <div class="section-head">
+          <h2>Your trends over time</h2>
+          <p>See how your habits move week to week. Charts are built from your journal — private to this browser.</p>
+        </div>
+        <div class="trends-controls">
+          <div class="range-toggle" id="range-toggle" role="group" aria-label="Time range">
+            <button type="button" class="range-btn active" data-days="7">7 days</button>
+            <button type="button" class="range-btn" data-days="14">14 days</button>
+            <button type="button" class="range-btn" data-days="30">30 days</button>
+          </div>
+          <button type="button" class="btn btn-ghost btn-small" id="sample-data">Try sample data</button>
+        </div>
+        <div class="trends-empty card" id="trends-empty" hidden>
+          <p>📊 No journal data yet. Log a few days with <strong>Vita</strong> (💬) — or tap <em>"Try sample data"</em> to preview how your trends will look.</p>
+        </div>
+        <div class="grid trends-grid" id="trends-grid"><!-- chart cards injected by script.js --></div>
+      </div>
+    </section>
+
     <!-- Articles -->
-    <section id="articles" class="section">
+    <section id="articles" class="section section-alt">
       <div class="container">
         <div class="section-head">
           <h2>Latest from the blog</h2>
