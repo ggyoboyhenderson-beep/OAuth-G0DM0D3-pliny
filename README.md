@@ -35,7 +35,8 @@ A clean, responsive **health & wellness website** — evidence-based guidance pl
   telling Vita `"export my data"`.
 - **Beginner workouts** — a "New to exercise? Start here" guide with a 15-minute
   starter routine, first-timer tips, and eight no-equipment moves explained.
-- **Health A–Z library** — 49 searchable, filterable guides across 11 categories:
+- **Health A–Z library** — 49 guides in a clean alphabetical directory (slim
+  expandable rows, not cards) with live search and filters across 11 categories:
   heart & blood, mind, sleep, bones & muscles, breathing & allergy, digestion &
   metabolism, skin & sun, eyes/ears/teeth, women's health, men's health, and
   prevention & habits. Each topic is curated from a renowned organization — WHO,

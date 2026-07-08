@@ -1862,13 +1862,25 @@
   function renderTopics() {
     if (!topicsGrid) return;
     var q = topicSearch ? topicSearch.value.trim().toLowerCase() : "";
-    var shown = TOPICS.filter(function (t) { return topicMatches(t, q); });
-    topicsGrid.innerHTML = shown.map(function (t) {
-      return '<article class="card topic-card"><div class="article-tag">' + TOPIC_CATS[t.cat] +
-        "</div><h3>" + t.emoji + " " + t.name + "</h3><p>" + t.blurb + "</p><ul>" +
+    var shown = TOPICS.filter(function (t) { return topicMatches(t, q); })
+      .slice().sort(function (a, b) { return a.name.localeCompare(b.name); });
+    var html = "", lastLetter = "";
+    shown.forEach(function (t) {
+      var letter = t.name.charAt(0).toUpperCase();
+      if (letter !== lastLetter) {
+        html += '<h3 class="topic-letter">' + letter + "</h3>";
+        lastLetter = letter;
+      }
+      html += '<details class="topic-row"><summary>' +
+        '<span class="topic-row-emoji" aria-hidden="true">' + t.emoji + "</span>" +
+        '<span class="topic-row-name">' + t.name + "</span>" +
+        '<span class="topic-row-cat">' + TOPIC_CATS[t.cat] + "</span>" +
+        '<span class="topic-chevron" aria-hidden="true">▾</span></summary>' +
+        '<div class="topic-body"><p>' + t.blurb + "</p><ul>" +
         t.tips.map(function (x) { return "<li>" + x + "</li>"; }).join("") +
-        '</ul><a class="topic-src" href="' + t.src.url + '" target="_blank" rel="noopener">Full guide: ' + t.src.label + " →</a></article>";
-    }).join("");
+        '</ul><a class="topic-src" href="' + t.src.url + '" target="_blank" rel="noopener">Full guide: ' + t.src.label + " →</a></div></details>";
+    });
+    topicsGrid.innerHTML = html;
     if (topicsEmpty) topicsEmpty.hidden = shown.length > 0;
   }
   if (topicChipsWrap) {
