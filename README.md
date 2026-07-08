@@ -35,6 +35,11 @@ A clean, responsive **health & wellness website** — evidence-based guidance pl
   telling Vita `"export my data"`.
 - **Beginner workouts** — a "New to exercise? Start here" guide with a 15-minute
   starter routine, first-timer tips, and eight no-equipment moves explained.
+- **Health A–Z library** — 17 searchable, filterable guides to common conditions
+  (blood pressure, diabetes, anxiety, insomnia, back pain, allergies, and more),
+  each curated from a renowned organization — WHO, CDC, NIH, APA, American Heart
+  Association, Sleep Foundation, AAFA — and linking to the full expert guidance.
+  Ask Vita `"tell me about blood pressure"` for any topic in chat.
 - **Hero + wellness pillars** — Movement, Nutrition, Sleep, and Mind.
 - **Daily habit tracker** — check off habits with a live progress ring; state is saved in `localStorage` and resets each day.
 - **Water intake tracker** — tappable glasses; syncs with anything you log via Vita.

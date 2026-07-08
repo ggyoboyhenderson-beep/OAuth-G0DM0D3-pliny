@@ -697,6 +697,7 @@
         "• \"slept 7.5 hours\"\n• \"log 8000 steps\"\n• \"feeling great\"\n" +
         "• \"log workout 30 min run\"\n• \"log bench 80kg x 5\" (I'll estimate your 1RM)\n" +
         "• \"remind me to stretch in 30 minutes\"\n" +
+        "• \"tell me about blood pressure\" (or any Health A–Z topic)\n" +
         "• \"summary\" for today's recap\n• \"export my data\" for a CSV download.";
     }
 
@@ -705,6 +706,20 @@
       return "Hi! 🌿 I'm Vita. Tell me how you're doing — e.g. \"log water\" or \"slept 8 hours\". Say \"help\" for ideas.";
     if (/\b(thanks|thank you|cheers|ty)\b/.test(low))
       return "Anytime! Keep up the great work. 💚";
+
+    // Health A–Z lookups ("tell me about blood pressure") — only replies
+    // when a known topic matches, so other commands fall through untouched.
+    if (/\b(tell me about|what is|what's|learn about|info(?:rmation)? (?:on|about)|explain|help with)\b/.test(low)) {
+      for (var ti = 0; ti < TOPICS.length; ti++) {
+        var tp = TOPICS[ti];
+        var hit = tp.keys.some(function (k) { return low.indexOf(k) !== -1; });
+        if (hit) {
+          return tp.emoji + " " + tp.name + "\n" + tp.blurb + "\n" +
+            tp.tips.map(function (x) { return "• " + x; }).join("\n") +
+            "\nSource: " + tp.src.label + " — the full guide is linked in the Health A–Z section.";
+        }
+      }
+    }
 
     // Clear
     if (/\bclear\b.*\breminder/.test(low) || /\breminder.*\bclear\b/.test(low)) {
@@ -1602,6 +1617,128 @@
     applyWUnit(true);
   });
   applyWUnit(false);
+
+  /* =====================================================================
+     Health A–Z — curated guidance from renowned health organizations,
+     each topic linking to its authoritative source. Also powers Vita's
+     "tell me about ..." answers.
+     ===================================================================== */
+  var TOPIC_CATS = {
+    heart: "Heart & blood", mind: "Mind", sleep: "Sleep",
+    bones: "Bones & muscles", breath: "Breathing & allergy", gut: "Digestion & metabolism",
+  };
+  var TOPICS = [
+    { emoji: "🫀", name: "High blood pressure", cat: "heart", keys: ["blood pressure", "hypertension"],
+      blurb: "Usually has no symptoms — that's why it's called the silent killer.",
+      tips: ["Get it checked regularly, even if you feel fine", "Cut back on salt and processed foods", "Daily movement and a healthy weight lower it"],
+      src: { label: "WHO", url: "https://www.who.int/news-room/fact-sheets/detail/hypertension" } },
+    { emoji: "❤️", name: "Heart health", cat: "heart", keys: ["heart health", "heart disease", "cardio"],
+      blurb: "Most heart disease is preventable with everyday habits.",
+      tips: ["Know your numbers: blood pressure, cholesterol, blood sugar", "Aim for 150 minutes of activity a week", "Don't smoke — quitting helps at any age"],
+      src: { label: "American Heart Association", url: "https://www.heart.org" } },
+    { emoji: "🩸", name: "High cholesterol", cat: "heart", keys: ["cholesterol"],
+      blurb: "No symptoms — only a blood test can tell you where you stand.",
+      tips: ["Get tested and know your levels", "Eat more fiber: oats, beans, fruit and veg", "Regular exercise raises the good (HDL) kind"],
+      src: { label: "CDC", url: "https://www.cdc.gov/cholesterol/" } },
+    { emoji: "🍬", name: "Type 2 diabetes", cat: "gut", keys: ["diabetes", "blood sugar", "glucose"],
+      blurb: "Largely preventable and manageable with lifestyle changes.",
+      tips: ["Regular activity and a healthy weight cut your risk sharply", "Choose whole grains over refined carbs", "Know your risk — a simple test can catch it early"],
+      src: { label: "WHO", url: "https://www.who.int/news-room/fact-sheets/detail/diabetes" } },
+    { emoji: "⚖️", name: "Weight management", cat: "gut", keys: ["obesity", "overweight", "lose weight", "weight management"],
+      blurb: "Sustainable beats drastic — small changes you can keep win.",
+      tips: ["Build meals around protein, fiber and vegetables", "Strength training preserves muscle while losing fat", "Sleep and stress strongly affect appetite"],
+      src: { label: "WHO", url: "https://www.who.int/news-room/fact-sheets/detail/obesity-and-overweight" } },
+    { emoji: "🔥", name: "Heartburn & reflux", cat: "gut", keys: ["heartburn", "reflux", "gerd", "acid"],
+      blurb: "Common and very manageable with a few habit changes.",
+      tips: ["Eat smaller meals, and not close to bedtime", "Raise the head of your bed if nights are bad", "Notice your triggers — often coffee, alcohol, fried food"],
+      src: { label: "NIH (NIDDK)", url: "https://www.niddk.nih.gov/health-information/digestive-diseases/acid-reflux-ger-gerd-adults" } },
+    { emoji: "😰", name: "Anxiety", cat: "mind", keys: ["anxiety", "panic", "worry"],
+      blurb: "One of the most common — and most treatable — mental health conditions.",
+      tips: ["Slow breathing calms your nervous system fast", "Limit caffeine and prioritise sleep", "Talking therapies work — reaching out is strength"],
+      src: { label: "NIH (NIMH)", url: "https://www.nimh.nih.gov/health/topics/anxiety-disorders" } },
+    { emoji: "💙", name: "Depression", cat: "mind", keys: ["depression", "depressed", "low mood"],
+      blurb: "A real illness, not a weakness — and it responds to treatment.",
+      tips: ["Movement and daylight genuinely help mood", "Stay connected — isolation feeds it", "Talk to a professional; you don't have to carry it alone"],
+      src: { label: "WHO", url: "https://www.who.int/news-room/fact-sheets/detail/depression" } },
+    { emoji: "🧠", name: "Stress", cat: "mind", keys: ["stress", "burnout", "overwhelmed"],
+      blurb: "Short bursts are normal; chronic stress wears the whole body down.",
+      tips: ["Take micro-breaks — even 2 minutes of breathing counts", "Protect sleep; stress and sleep loss feed each other", "Connection with people is a powerful buffer"],
+      src: { label: "American Psychological Association", url: "https://www.apa.org/topics/stress" } },
+    { emoji: "⚡", name: "Migraine", cat: "mind", keys: ["migraine", "headache"],
+      blurb: "More than a headache — a neurological condition with real treatments.",
+      tips: ["Keep a diary to spot your triggers", "Regular sleep, meals and hydration prevent attacks", "See a doctor — modern treatments help most people"],
+      src: { label: "WHO", url: "https://www.who.int/news-room/fact-sheets/detail/headache-disorders" } },
+    { emoji: "🌙", name: "Insomnia", cat: "sleep", keys: ["insomnia", "can't sleep", "trouble sleeping"],
+      blurb: "The fix is usually habits, not willpower.",
+      tips: ["Wake at the same time every day — even weekends", "Keep the room cool, dark and quiet", "No screens in the last hour; wind down instead"],
+      src: { label: "Sleep Foundation", url: "https://www.sleepfoundation.org/insomnia" } },
+    { emoji: "😴", name: "Snoring & sleep apnea", cat: "sleep", keys: ["snoring", "apnea", "apnoea"],
+      blurb: "Loud snoring plus daytime sleepiness is worth getting checked.",
+      tips: ["Side-sleeping often reduces snoring", "Weight loss can improve it significantly", "Untreated apnea strains the heart — ask about a sleep study"],
+      src: { label: "Sleep Foundation", url: "https://www.sleepfoundation.org/sleep-apnea" } },
+    { emoji: "🦴", name: "Lower back pain", cat: "bones", keys: ["back pain", "backache", "lower back"],
+      blurb: "Most back pain improves within weeks — movement helps, rest doesn't.",
+      tips: ["Keep gently moving; bed rest slows recovery", "Strengthen your core to protect your spine", "Numbness, weakness or fever with it → see a doctor"],
+      src: { label: "NIH (NINDS)", url: "https://www.ninds.nih.gov/health-information/disorders/back-pain" } },
+    { emoji: "🦵", name: "Osteoarthritis", cat: "bones", keys: ["arthritis", "joint pain", "osteoarthritis"],
+      blurb: "\"Motion is lotion\" — active joints hurt less than idle ones.",
+      tips: ["Strengthen the muscles around the joint", "Joint-friendly cardio: swimming, cycling, walking", "Every kilo lost takes several off your knees"],
+      src: { label: "CDC", url: "https://www.cdc.gov/arthritis/" } },
+    { emoji: "🤧", name: "Seasonal allergies", cat: "breath", keys: ["allergy", "allergies", "hay fever", "pollen"],
+      blurb: "You can't avoid pollen entirely, but you can outsmart it.",
+      tips: ["Check pollen counts and plan outdoor time", "Shower and change clothes after being outside", "Keep windows closed on high-pollen days"],
+      src: { label: "AAFA", url: "https://aafa.org" } },
+    { emoji: "🌬️", name: "Asthma", cat: "breath", keys: ["asthma", "wheez", "inhaler"],
+      blurb: "Well-controlled asthma shouldn't limit your life.",
+      tips: ["Take controller medication as prescribed, even when fine", "Know your triggers: smoke, cold air, dust, exercise", "Have a written action plan for flare-ups"],
+      src: { label: "WHO", url: "https://www.who.int/news-room/fact-sheets/detail/asthma" } },
+    { emoji: "🤒", name: "Colds & flu", cat: "breath", keys: ["cold", "flu", "influenza", "sick"],
+      blurb: "Mostly prevention: hands, vaccines, and rest when it hits.",
+      tips: ["Wash hands often — it's still the best defense", "An annual flu vaccine protects you and others", "Rest and fluids; see a doctor if symptoms are severe"],
+      src: { label: "CDC", url: "https://www.cdc.gov/flu/" } },
+  ];
+
+  var topicsGrid = document.getElementById("topics-grid");
+  var topicsEmpty = document.getElementById("topics-empty");
+  var topicSearch = document.getElementById("topic-search");
+  var topicChipsWrap = document.getElementById("topic-chips");
+  var topicCat = "all";
+
+  function topicMatches(t, q) {
+    if (topicCat !== "all" && t.cat !== topicCat) return false;
+    if (!q) return true;
+    var hay = (t.name + " " + t.keys.join(" ") + " " + t.blurb).toLowerCase();
+    return hay.indexOf(q) !== -1;
+  }
+  function renderTopics() {
+    if (!topicsGrid) return;
+    var q = topicSearch ? topicSearch.value.trim().toLowerCase() : "";
+    var shown = TOPICS.filter(function (t) { return topicMatches(t, q); });
+    topicsGrid.innerHTML = shown.map(function (t) {
+      return '<article class="card topic-card"><div class="article-tag">' + TOPIC_CATS[t.cat] +
+        "</div><h3>" + t.emoji + " " + t.name + "</h3><p>" + t.blurb + "</p><ul>" +
+        t.tips.map(function (x) { return "<li>" + x + "</li>"; }).join("") +
+        '</ul><a class="topic-src" href="' + t.src.url + '" target="_blank" rel="noopener">Full guide: ' + t.src.label + " →</a></article>";
+    }).join("");
+    if (topicsEmpty) topicsEmpty.hidden = shown.length > 0;
+  }
+  if (topicChipsWrap) {
+    var cats = [["all", "All"]].concat(Object.keys(TOPIC_CATS).map(function (k) { return [k, TOPIC_CATS[k]]; }));
+    topicChipsWrap.innerHTML = cats.map(function (c) {
+      return '<button type="button" class="tchip' + (c[0] === "all" ? " active" : "") + '" data-cat="' + c[0] + '">' + c[1] + "</button>";
+    }).join("");
+    topicChipsWrap.addEventListener("click", function (e) {
+      var chip = e.target.closest(".tchip");
+      if (!chip) return;
+      topicCat = chip.dataset.cat;
+      topicChipsWrap.querySelectorAll(".tchip").forEach(function (b) {
+        b.classList.toggle("active", b === chip);
+      });
+      renderTopics();
+    });
+  }
+  if (topicSearch) topicSearch.addEventListener("input", renderTopics);
+  renderTopics();
 
   /* ===== Newsletter (client-side demo only) ===== */
   var nlForm = document.getElementById("newsletter-form");

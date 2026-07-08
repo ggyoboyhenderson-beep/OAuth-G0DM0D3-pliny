@@ -507,6 +507,34 @@ img { max-width: 100%; }
 :root[data-theme="dark"] .macro-c { color: #4fd699; }
 :root[data-theme="dark"] .macro-f { color: #f0a07a; }
 
+/* ===== Health A–Z topics ===== */
+.topics-controls { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; justify-content: center; margin-bottom: 28px; }
+.topic-search {
+  flex: 1 1 260px; max-width: 340px; padding: 12px 18px; border: 2px solid #dbe7df;
+  border-radius: 999px; font-family: inherit; font-size: .95rem;
+  background: var(--white); color: var(--ink); transition: border-color .15s;
+}
+.topic-search:focus { outline: none; border-color: var(--green-500); }
+.topic-chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.tchip {
+  border: none; background: var(--white); color: var(--slate); cursor: pointer;
+  padding: 8px 16px; border-radius: 999px; font-size: .85rem; font-weight: 600;
+  font-family: inherit; box-shadow: var(--shadow); transition: .15s;
+}
+.tchip:hover { color: var(--green-700); }
+.tchip.active { background: var(--green-600); color: #fff; }
+.topics-grid { grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); }
+.topic-card { display: flex; flex-direction: column; }
+.topic-card h3 { font-size: 1.12rem; margin: 10px 0 6px; }
+.topic-card > p { color: var(--slate); font-size: .92rem; margin: 0 0 10px; }
+.topic-card ul { margin: 0 0 14px; padding-left: 18px; color: var(--slate); font-size: .88rem; flex: 1; }
+.topic-card ul li { margin-bottom: 5px; }
+.topic-src { font-weight: 700; font-size: .88rem; color: var(--green-600); }
+.topic-src:hover { text-decoration: underline; }
+.topics-empty { text-align: center; color: var(--slate); }
+.topics-sources { text-align: center; color: var(--slate); font-size: .85rem; margin: 28px auto 0; max-width: 640px; }
+:root[data-theme="dark"] .topic-search { border-color: #2c463a; }
+
 /* ===== 1RM estimator ===== */
 .rm-tool { max-width: 780px; margin: 34px auto 0; }
 .rm-head h3 { font-size: 1.25rem; }
