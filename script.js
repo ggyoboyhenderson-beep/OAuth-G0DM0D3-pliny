@@ -459,7 +459,7 @@
     if (!journalStats) return;
     var s = snapshot();
     var tiles = [
-      { emoji: "⚖️", label: "Weight", value: s.weight ? s.weight.value + " <small>" + s.weight.unit + "</small>" : "—" },
+      { emoji: "⚖️", label: "Weight", value: s.weight ? prefWeight(s.weight.value, s.weight.unit) + " <small>" + currentWUnit() + "</small>" : "—" },
       { emoji: "💧", label: "Water", value: s.water + " <small>glasses</small>" },
       { emoji: "😴", label: "Sleep", value: s.sleep ? s.sleep.value + " <small>h</small>" : "—" },
       { emoji: "👟", label: "Steps", value: s.steps ? Number(s.steps.value).toLocaleString() : "—" },
@@ -739,7 +739,7 @@
       var s = snapshot();
       var parts = [];
       parts.push("💧 Water: " + s.water + " glass" + (s.water === 1 ? "" : "es"));
-      if (s.weight) parts.push("⚖️ Weight: " + s.weight.value + " " + s.weight.unit);
+      if (s.weight) parts.push("⚖️ Weight: " + prefWeight(s.weight.value, s.weight.unit) + " " + currentWUnit());
       if (s.sleep) parts.push("😴 Sleep: " + s.sleep.value + " h");
       if (s.steps) parts.push("👟 Steps: " + Number(s.steps.value).toLocaleString());
       if (s.mood) parts.push(s.mood.emoji + " Mood: " + s.mood.value);
@@ -772,8 +772,10 @@
     // Weight
     if (/\bweigh|\bweight\b/.test(low)) {
       var w = num(low);
-      if (w == null) return "How much? Try \"log weight 70kg\".";
-      var unit = /\b(lb|lbs|pound)/.test(low) ? "lb" : "kg";
+      if (w == null) return "How much? Try \"log weight 70kg\" or \"log weight 150 lb\".";
+      var unit = /\b(lb|lbs|pound)/.test(low) ? "lb"
+        : /\b(kg|kilo)/.test(low) ? "kg"
+        : currentWUnit();
       addEntry("weight", "⚖️", "Weight: " + w + " " + unit, w, unit);
       return "Logged your weight: " + w + " " + unit + ". ⚖️";
     }
@@ -1000,7 +1002,11 @@
   }
 
   var CHART_DEFS = [
-    { type: "weight", title: "Weight", emoji: "⚖️", unit: "kg", kind: "line", agg: "last", series: "#2a78d6", seriesDark: "#3987e5", fmt: function (v) { return v; } },
+    {
+      type: "weight", title: "Weight", emoji: "⚖️", unit: "kg", kind: "line", agg: "last",
+      series: "#2a78d6", seriesDark: "#3987e5", fmt: function (v) { return v; },
+      extract: function (e) { return e.value == null ? null : prefWeight(e.value, e.unit); },
+    },
     { type: "water", title: "Water", emoji: "💧", unit: "glasses", kind: "bar", agg: "sum", series: "#199e70", seriesDark: "#199e70", fmt: function (v) { return v; } },
     { type: "sleep", title: "Sleep", emoji: "😴", unit: "hours", kind: "bar", agg: "last", series: "#4a3aa7", seriesDark: "#9085e9", fmt: function (v) { return v; } },
     { type: "steps", title: "Steps", emoji: "👟", unit: "steps", kind: "bar", agg: "last", series: "#eb6834", seriesDark: "#d95926", fmt: function (v) { return Number(v).toLocaleString(); } },
@@ -1271,6 +1277,7 @@
     if (wg) wg.value = PERSONAS[level].wkGoal;
     var roleEl = document.getElementById("assistant-role");
     if (roleEl) roleEl.textContent = PERSONAS[level].role;
+    maybeAutoView(level);
     if (opts && opts.announce && assistantOpen) {
       var line = "Got it — I'll coach you as \"" + PERSONAS[level].title + "\". " + PERSONAS[level].note;
       botSay(line); speak(line);
@@ -1518,6 +1525,83 @@
       }).join("");
     });
   }
+
+  /* =====================================================================
+     Simple / Full view — progressive disclosure so the page never
+     overwhelms; power tools are one tap away in Full view.
+     ===================================================================== */
+  var VIEW_KEY = "vh-view";
+  var VIEW_EXPLICIT_KEY = "vh-view-explicit";
+  var viewToggle = document.getElementById("view-toggle");
+
+  function currentView() {
+    return document.documentElement.getAttribute("data-view") || "simple";
+  }
+  function setView(v, explicit) {
+    document.documentElement.setAttribute("data-view", v);
+    try {
+      localStorage.setItem(VIEW_KEY, v);
+      if (explicit) localStorage.setItem(VIEW_EXPLICIT_KEY, "1");
+    } catch (e) {}
+    if (viewToggle) viewToggle.textContent = v === "simple" ? "Full view" : "Simple view";
+  }
+  // Persona picks a sensible default view unless the user chose one themselves.
+  function maybeAutoView(level) {
+    var explicit = false;
+    try { explicit = localStorage.getItem(VIEW_EXPLICIT_KEY) === "1"; } catch (e) {}
+    if (explicit) return;
+    setView(level === "starter" ? "simple" : "full", false);
+  }
+  setView(currentView(), false); // sync toggle label with pre-paint state
+  if (viewToggle) viewToggle.addEventListener("click", function () {
+    setView(currentView() === "simple" ? "full" : "simple", true);
+  });
+  var teaserBtn = document.getElementById("teaser-full");
+  if (teaserBtn) teaserBtn.addEventListener("click", function () {
+    setView("full", true);
+    var wk = document.getElementById("workout");
+    if (wk) wk.scrollIntoView({ behavior: "smooth" });
+  });
+  var beginnerMore = document.getElementById("beginner-more");
+  if (beginnerMore) beginnerMore.addEventListener("click", function () {
+    if (currentView() === "simple") setView("full", true); // unhide before the anchor jump
+  });
+
+  /* ===== Weight units (kg ⇄ lb) ===== */
+  var WUNIT_KEY = "vh-wunit";
+  var wunitPref = "kg";
+  try { wunitPref = localStorage.getItem(WUNIT_KEY) || "kg"; } catch (e) {}
+  var wunitBtn = document.getElementById("wunit-toggle");
+
+  function currentWUnit() { return wunitPref || "kg"; }
+  function prefWeight(v, u) {
+    var kg = (u === "lb") ? v * 0.453592 : v;
+    var out = currentWUnit() === "lb" ? kg / 0.453592 : kg;
+    return Math.round(out * 10) / 10;
+  }
+  function applyWUnit(interactive) {
+    if (wunitBtn) wunitBtn.textContent = wunitPref;
+    CHART_DEFS.forEach(function (d) { if (d.type === "weight") d.unit = wunitPref; });
+    // Point the calculators at matching defaults.
+    var wantImperial = wunitPref === "lb";
+    var bmiBtn = document.querySelector('.unit-btn[data-unit="' + (wantImperial ? "imperial" : "metric") + '"]');
+    if (bmiBtn && !bmiBtn.classList.contains("active")) bmiBtn.click();
+    var mBtn = document.querySelector('.munit-btn[data-unit="' + (wantImperial ? "imperial" : "metric") + '"]');
+    if (mBtn && !mBtn.classList.contains("active")) mBtn.click();
+    var rmSel = document.getElementById("rm-unit");
+    if (rmSel) rmSel.value = wantImperial ? "lb" : "kg";
+    renderStats();
+    renderTrends();
+    if (interactive && assistantOpen) {
+      botSay("Switched to " + (wantImperial ? "pounds" : "kilograms") + " — your weights now show in " + wunitPref + ". ⚖️");
+    }
+  }
+  if (wunitBtn) wunitBtn.addEventListener("click", function () {
+    wunitPref = wunitPref === "kg" ? "lb" : "kg";
+    try { localStorage.setItem(WUNIT_KEY, wunitPref); } catch (e) {}
+    applyWUnit(true);
+  });
+  applyWUnit(false);
 
   /* ===== Newsletter (client-side demo only) ===== */
   var nlForm = document.getElementById("newsletter-form");

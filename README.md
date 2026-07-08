@@ -13,6 +13,13 @@ A clean, responsive **health & wellness website** — evidence-based guidance pl
 - **Personalized for every body** — a "Choose your path" selector (Just starting /
   Keeping fit / Athlete-bodybuilder) tailors the workout planner defaults and Vita's
   coaching tone to your level.
+- **Simple & Full views** — the site opens in a calm Simple view for everyday
+  visitors; the power tools (workout planner, fuel calculator, 1RM estimator) are
+  one tap away behind the "Full view" toggle. Picking the "Just starting" path
+  keeps things simple; athletes get Full view automatically.
+- **kg ⇄ lb everywhere** — a global unit switch in the nav converts your logged
+  weights across the journal, charts, and Vita, and points the BMI/fuel/1RM tools
+  at matching defaults.
 - **Fuel calculator** — estimates daily calories and protein/carb/fat targets for
   cutting, maintaining, or bulking (Mifflin-St Jeor).
 - **Health journal** — a live dashboard of everything Vita logs: today's snapshot
