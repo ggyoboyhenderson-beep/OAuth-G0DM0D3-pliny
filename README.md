@@ -17,9 +17,15 @@ A clean, responsive **health & wellness website** — evidence-based guidance pl
   cutting, maintaining, or bulking (Mifflin-St Jeor).
 - **Health journal** — a live dashboard of everything Vita logs: today's snapshot
   tiles, recent entries, and active reminders. All data stays in `localStorage`.
-- **Trends over time** — small-multiple charts (weight, water, sleep, steps) built
-  from your journal, with 7/14/30-day ranges, hover tooltips, and a "Try sample
-  data" preview. Accessible single-hue marks validated for colour-vision safety.
+- **Trends over time** — small-multiple charts (weight, water, sleep, steps, and
+  mood on a low→great scale) built from your journal, with 7/14/30-day ranges,
+  hover tooltips, and a "Try sample data" preview. Accessible single-hue marks
+  validated for colour-vision safety.
+- **Strength tools** — a one-rep max estimator (Epley) with training-percentage
+  tiles, plus lift logging via Vita (`"log bench 80kg x 5"`) that replies with
+  your estimated 1RM.
+- **CSV export** — download your whole journal from the Journal section or by
+  telling Vita `"export my data"`.
 - **Beginner workouts** — a "New to exercise? Start here" guide with a 15-minute
   starter routine, first-timer tips, and eight no-equipment moves explained.
 - **Hero + wellness pillars** — Movement, Nutrition, Sleep, and Mind.

@@ -483,6 +483,21 @@ img { max-width: 100%; }
 :root[data-theme="dark"] .macro-c { color: #4fd699; }
 :root[data-theme="dark"] .macro-f { color: #f0a07a; }
 
+/* ===== 1RM estimator ===== */
+.rm-tool { max-width: 780px; margin: 34px auto 0; }
+.rm-head h3 { font-size: 1.25rem; }
+.rm-head p { color: var(--slate); font-size: .95rem; }
+.rm-form { display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 16px; align-items: end; }
+.rm-result { margin-top: 22px; padding-top: 20px; border-top: 1px solid #e4efe8; text-align: center; }
+.rm-value { font-size: 2.6rem; font-weight: 800; color: var(--green-700); margin: 0; line-height: 1; }
+.rm-note { color: var(--slate); font-weight: 600; margin: 4px 0 16px; }
+.rm-percents { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; margin-bottom: 12px; }
+.rm-p { background: var(--bg); border-radius: var(--radius-sm); padding: 12px 6px; }
+.rm-p span { display: block; font-weight: 800; color: var(--ink); }
+.rm-p small { font-size: .72rem; color: var(--slate); font-weight: 600; }
+:root[data-theme="dark"] .rm-result { border-top-color: #2c463a; }
+:root[data-theme="dark"] .rm-p { background: #0e1a15; }
+
 /* ===== Vita — JARVIS-style upgrades ===== */
 .assistant-launch { animation: vita-pulse 2.6s ease-in-out infinite; }
 @keyframes vita-pulse {
@@ -560,6 +575,10 @@ img { max-width: 100%; }
 @media (max-width: 480px) {
   .macro-fields { grid-template-columns: 1fr; }
   .macro-tiles { grid-template-columns: 1fr 1fr 1fr; }
+}
+@media (max-width: 700px) {
+  .rm-form { grid-template-columns: 1fr 1fr; }
+  .rm-percents { grid-template-columns: repeat(3, 1fr); }
 }
 @media (max-width: 480px) {
   .journal-stats { grid-template-columns: repeat(2, 1fr); }

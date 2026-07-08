@@ -513,8 +513,10 @@
     renderReminderList();
   }
 
-  function addEntry(type, emoji, text, value, unit) {
-    journal.push({ id: uid(), ts: Date.now(), type: type, emoji: emoji, text: text, value: value, unit: unit });
+  function addEntry(type, emoji, text, value, unit, extra) {
+    var entry = { id: uid(), ts: Date.now(), type: type, emoji: emoji, text: text, value: value, unit: unit };
+    if (extra) for (var k in extra) entry[k] = extra[k];
+    journal.push(entry);
     if (journal.length > 400) journal = journal.slice(-400);
     writeStore(J_KEY, journal);
     renderAll();
@@ -544,6 +546,35 @@
     reminders = [];
     writeStore(R_KEY, reminders);
     renderReminderList();
+  });
+
+  /* ---------- CSV export ---------- */
+  function exportJournalCSV() {
+    if (!journal.length) return false;
+    var rows = [["date", "time", "type", "entry", "value", "unit"]];
+    journal.forEach(function (e) {
+      var d = new Date(e.ts);
+      rows.push([
+        d.toISOString().slice(0, 10), timeLabel(e.ts), e.type, e.text,
+        e.value == null ? "" : e.value, e.unit || "",
+      ]);
+    });
+    var csv = rows.map(function (r) {
+      return r.map(function (c) { return '"' + String(c).replace(/"/g, '""') + '"'; }).join(",");
+    }).join("\n");
+    var blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "vitality-health-journal.csv";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 5000);
+    return true;
+  }
+  var journalExport = document.getElementById("journal-export");
+  if (journalExport) journalExport.addEventListener("click", function () {
+    if (!exportJournalCSV()) showToast("📄", "Nothing to export", "Log something with Vita first.");
   });
 
   /* ---------- Toasts + notifications ---------- */
@@ -610,6 +641,13 @@
     stressed: "😣", anxious: "😰", nervous: "😰", sad: "😔", down: "😔", low: "😔",
     bad: "😔", sick: "🤒", ill: "🤒", angry: "😠", energetic: "⚡", motivated: "💪",
   };
+  // 1–5 score so moods can be charted over time.
+  var MOOD_SCORE = {
+    great: 5, amazing: 5, awesome: 5, happy: 4, good: 4, motivated: 4, energetic: 4,
+    fine: 3, ok: 3, okay: 3, meh: 3,
+    tired: 2, exhausted: 2, sleepy: 2, stressed: 2, anxious: 2, nervous: 2, angry: 2,
+    sad: 1, down: 1, low: 1, bad: 1, sick: 1, ill: 1,
+  };
   var CRISIS = /\b(chest pain|can'?t breathe|cannot breathe|suicidal|kill myself|end my life|overdose|heart attack|stroke|seizure)\b/i;
 
   function parseWhen(str) {
@@ -657,8 +695,9 @@
       return "I can log your health and remind you. Try:\n" +
         "• \"log weight 70kg\"\n• \"log water\" (or \"drank 2 glasses\")\n" +
         "• \"slept 7.5 hours\"\n• \"log 8000 steps\"\n• \"feeling great\"\n" +
-        "• \"log workout 30 min run\"\n• \"remind me to stretch in 30 minutes\"\n" +
-        "• \"summary\" for today's recap.";
+        "• \"log workout 30 min run\"\n• \"log bench 80kg x 5\" (I'll estimate your 1RM)\n" +
+        "• \"remind me to stretch in 30 minutes\"\n" +
+        "• \"summary\" for today's recap\n• \"export my data\" for a CSV download.";
     }
 
     // Greetings / thanks
@@ -711,6 +750,25 @@
         (s.water < 8 ? "\n\nTip: " + (8 - s.water) + " more glass" + (8 - s.water === 1 ? "" : "es") + " to hit your water goal!" : "\n\nGreat hydration today! 💧");
     }
 
+    // Export
+    if (/\bexport\b|\bdownload\b.*\b(data|journal|csv)\b/.test(low)) {
+      if (!journal.length) return "Nothing to export yet — log a few things first!";
+      exportJournalCSV();
+      return "Done — your journal is downloading as a CSV file. 📄";
+    }
+
+    // Lifts (e.g. "log bench 80kg x 5") — must run before the weight branch
+    var liftMatch = /\b(bench|squat|deadlift|overhead press|ohp|shoulder press|barbell row|row|curl|hip thrust|lat pulldown|leg press)\b[^0-9]*(\d+(?:\.\d+)?)\s*(kg|lb|lbs)?\s*(?:x|×|for)\s*(\d+)/i.exec(low);
+    if (liftMatch) {
+      var lname = liftMatch[1], lw = parseFloat(liftMatch[2]);
+      var lunit = liftMatch[3] ? liftMatch[3].replace("lbs", "lb") : "kg";
+      var lreps = Math.max(1, Math.min(20, parseInt(liftMatch[4], 10)));
+      var e1 = lreps === 1 ? lw : lw * (1 + lreps / 30); // Epley
+      e1 = Math.round(e1 * 10) / 10;
+      addEntry("lift", "💪", capitalize(lname) + " " + lw + " " + lunit + " × " + lreps + " (e1RM " + e1 + ")", e1, lunit, { weight: lw, reps: lreps, lift: lname });
+      return "Logged " + lname + " " + lw + " " + lunit + " × " + lreps + ". Estimated 1RM ≈ " + e1 + " " + lunit + ". 💪 Add a little weight when every rep feels solid.";
+    }
+
     // Weight
     if (/\bweigh|\bweight\b/.test(low)) {
       var w = num(low);
@@ -752,7 +810,7 @@
     var moodMatch = /\b(?:feeling|feel|mood(?: is| of)?|i am|i'm)\s+([a-z]+)/.exec(low);
     if (moodMatch && MOOD_EMOJI[moodMatch[1]]) {
       var mword = moodMatch[1];
-      addEntry("mood", MOOD_EMOJI[mword], "Feeling " + mword, mword, "");
+      addEntry("mood", MOOD_EMOJI[mword], "Feeling " + mword, mword, "", { score: MOOD_SCORE[mword] || 3 });
       return MOOD_EMOJI[mword] + " Noted that you're feeling " + mword + ". Thanks for checking in.";
     }
 
@@ -806,7 +864,7 @@
   }
   function botSay(text) { renderMsg(text, "bot"); pushMsg(text, "bot"); }
 
-  var CHIPS = ["Log water", "Log workout", "Summary", "Remind me to stretch in 30 minutes", "Help"];
+  var CHIPS = ["Log water", "Summary", "Log bench 60kg x 5", "Remind me to stretch in 30 minutes", "Export my data", "Help"];
   function renderChips() {
     if (!chipsEl) return;
     chipsEl.innerHTML = "";
@@ -921,13 +979,15 @@
   }
 
   // Aggregate journal entries into per-day values for a metric.
-  function seriesFor(type, days, agg) {
+  function seriesFor(type, days, agg, extract) {
     var byDay = {};
     journal.forEach(function (e) {
       if (e.type !== type) return;
+      var val = extract ? extract(e) : (e.value != null ? e.value : 1);
+      if (val == null) return;
       var dk = new Date(e.ts).toISOString().slice(0, 10);
       if (!byDay[dk]) byDay[dk] = [];
-      byDay[dk].push(e.value != null ? e.value : 1);
+      byDay[dk].push(val);
     });
     return days.map(function (dk) {
       var vals = byDay[dk];
@@ -944,6 +1004,13 @@
     { type: "water", title: "Water", emoji: "💧", unit: "glasses", kind: "bar", agg: "sum", series: "#199e70", seriesDark: "#199e70", fmt: function (v) { return v; } },
     { type: "sleep", title: "Sleep", emoji: "😴", unit: "hours", kind: "bar", agg: "last", series: "#4a3aa7", seriesDark: "#9085e9", fmt: function (v) { return v; } },
     { type: "steps", title: "Steps", emoji: "👟", unit: "steps", kind: "bar", agg: "last", series: "#eb6834", seriesDark: "#d95926", fmt: function (v) { return Number(v).toLocaleString(); } },
+    {
+      type: "mood", title: "Mood", emoji: "🙂", unit: "", kind: "line", agg: "last",
+      domain: [1, 5], noDelta: true, series: "#e87ba4", seriesDark: "#d55181",
+      extract: function (e) { return e.score != null ? e.score : null; },
+      fmt: function (v) { return ({ 1: "low", 2: "meh", 3: "ok", 4: "good", 5: "great" })[Math.round(v)] || v; },
+      tickFmt: function (v) { return ({ 1: "low", 3: "ok", 5: "great" })[Math.round(v)] || ""; },
+    },
   ];
 
   function isDark() { return document.documentElement.getAttribute("data-theme") === "dark"; }
@@ -963,7 +1030,7 @@
   }
 
   function buildChart(def, days) {
-    var data = seriesFor(def.type, days, def.agg);
+    var data = seriesFor(def.type, days, def.agg, def.extract);
     var present = data.filter(function (d) { return d.value != null; });
     var color = isDark() ? def.seriesDark : def.series;
 
@@ -973,7 +1040,7 @@
     var latest = present.length ? present[present.length - 1].value : null;
     var prev = present.length > 1 ? present[present.length - 2].value : null;
     var deltaHtml = "";
-    if (latest != null && prev != null && prev !== 0) {
+    if (!def.noDelta && latest != null && prev != null && prev !== 0) {
       var diff = latest - prev;
       var cls = diff > 0 ? "up" : diff < 0 ? "down" : "flat";
       // For weight, down is typically framed neutrally; keep arrows factual.
@@ -1009,7 +1076,8 @@
     var maxRaw = Math.max.apply(null, present.map(function (d) { return d.value; }));
     var minRaw = Math.min.apply(null, present.map(function (d) { return d.value; }));
     var yMax, yMin;
-    if (def.kind === "bar") { yMin = 0; yMax = niceMax(maxRaw); }
+    if (def.domain) { yMin = def.domain[0]; yMax = def.domain[1]; }
+    else if (def.kind === "bar") { yMin = 0; yMax = niceMax(maxRaw); }
     else { // line: pad around min/max
       var span = maxRaw - minRaw || Math.max(1, maxRaw * 0.1);
       yMin = Math.max(0, minRaw - span * 0.4);
@@ -1027,7 +1095,9 @@
       var gy = yAt(gv);
       svg.appendChild(svgEl("line", { class: "grid-line", x1: padL, y1: gy, x2: W - padR, y2: gy }));
       var lbl = svgEl("text", { class: "axis-label", x: padL - 5, y: gy + 3, "text-anchor": "end" });
-      lbl.textContent = def.type === "steps" ? Math.round(gv / 1000) + "k" : Math.round(gv * 10) / 10;
+      lbl.textContent = def.tickFmt ? def.tickFmt(gv)
+        : def.type === "steps" ? Math.round(gv / 1000) + "k"
+        : Math.round(gv * 10) / 10;
       svg.appendChild(lbl);
     }
 
@@ -1072,7 +1142,7 @@
     var lastIdx = days.indexOf(present[present.length - 1].day);
     var lv = present[present.length - 1].value;
     var vlabel = svgEl("text", { class: "value-label", x: xAt(lastIdx), y: yAt(lv) - 8, "text-anchor": "middle" });
-    vlabel.textContent = def.type === "steps" ? Number(lv).toLocaleString() : lv;
+    vlabel.textContent = def.fmt(lv);
     svg.appendChild(vlabel);
 
     card.appendChild(svg);
@@ -1088,8 +1158,7 @@
 
   function attachHover(mark, d, def, dateLabel) {
     function move(ev) {
-      var val = def.type === "steps" ? Number(d.value).toLocaleString() : d.value;
-      chartTip.textContent = dateLabel + " · " + val + " " + def.unit;
+      chartTip.textContent = dateLabel + " · " + def.fmt(d.value) + (def.unit ? " " + def.unit : "");
       chartTip.classList.add("show");
       var x = (ev.touches ? ev.touches[0].clientX : ev.clientX) + 12;
       var y = (ev.touches ? ev.touches[0].clientY : ev.clientY) - 34;
@@ -1141,6 +1210,9 @@
       pushSample(base - 3600000, "sleep", "😴", "Slept " + sleep + " h", sleep, "h");
       var steps = 3500 + Math.floor(Math.random() * 8000);
       pushSample(base + 7200000, "steps", "👟", steps.toLocaleString() + " steps", steps, "steps");
+      var score = 2 + Math.floor(Math.random() * 4);
+      var mword = ({ 2: "tired", 3: "ok", 4: "good", 5: "great" })[score];
+      pushSample(base + 1800000, "mood", MOOD_EMOJI[mword], "Feeling " + mword, mword, "", { score: score });
       if (i % 3 === 0) pushSample(base + 5400000, "workout", "🏋️", "Workout: a walk", 30, "min");
     });
     if (journal.length > 400) journal = journal.slice(-400);
@@ -1148,8 +1220,10 @@
     renderAll();
     renderTrends();
   }
-  function pushSample(ts, type, emoji, text, value, unit) {
-    journal.push({ id: uid(), ts: ts, type: type, emoji: emoji, text: text, value: value, unit: unit });
+  function pushSample(ts, type, emoji, text, value, unit, extra) {
+    var entry = { id: uid(), ts: ts, type: type, emoji: emoji, text: text, value: value, unit: unit };
+    if (extra) for (var k in extra) entry[k] = extra[k];
+    journal.push(entry);
   }
   if (sampleBtn) sampleBtn.addEventListener("click", addSampleData);
 
@@ -1412,6 +1486,38 @@
       showGreetingBubble();
     }
   }, 800);
+
+  /* ===== One-rep max estimator ===== */
+  var rmForm = document.getElementById("rm-form");
+  if (rmForm) {
+    rmForm.addEventListener("submit", function (e) {
+      e.preventDefault();
+      var w = parseFloat(document.getElementById("rm-weight").value);
+      var reps = parseInt(document.getElementById("rm-reps").value, 10);
+      var unit = document.getElementById("rm-unit").value;
+      var box = document.getElementById("rm-result");
+      var maxEl = document.getElementById("rm-max");
+      var pctEl = document.getElementById("rm-percents");
+      box.hidden = false;
+      if (!(w > 0) || !(reps >= 1)) {
+        maxEl.textContent = "–";
+        pctEl.innerHTML = "";
+        return;
+      }
+      reps = Math.min(12, reps);
+      var e1 = reps === 1 ? w : w * (1 + reps / 30); // Epley
+      e1 = Math.round(e1 * 10) / 10;
+      maxEl.textContent = e1 + " " + unit;
+      var scheme = [
+        { p: 95, r: 2 }, { p: 90, r: 4 }, { p: 85, r: 6 },
+        { p: 80, r: 8 }, { p: 75, r: 10 }, { p: 70, r: 12 },
+      ];
+      pctEl.innerHTML = scheme.map(function (s) {
+        var lw = Math.round((e1 * s.p) / 100 * 2) / 2; // nearest 0.5
+        return '<div class="rm-p"><span>' + lw + " " + unit + "</span><small>" + s.p + "% × " + s.r + "</small></div>";
+      }).join("");
+    });
+  }
 
   /* ===== Newsletter (client-side demo only) ===== */
   var nlForm = document.getElementById("newsletter-form");

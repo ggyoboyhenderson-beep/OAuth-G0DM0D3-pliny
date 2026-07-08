@@ -252,6 +252,34 @@
           </div>
           <div class="grid plan-grid" id="plan-grid"></div>
         </div>
+
+        <div class="rm-tool card">
+          <div class="rm-head">
+            <h3>One-rep max estimator</h3>
+            <p>Enter any working set to estimate your 1RM and training percentages (Epley formula). You can also tell Vita <em>"log bench 80kg x 5"</em> to track lifts.</p>
+          </div>
+          <form id="rm-form" class="rm-form">
+            <label class="field">
+              <span>Weight lifted</span>
+              <input type="number" id="rm-weight" min="1" step="any" inputmode="decimal" placeholder="80" />
+            </label>
+            <label class="field">
+              <span>Reps (1–12)</span>
+              <input type="number" id="rm-reps" min="1" max="12" inputmode="numeric" placeholder="5" />
+            </label>
+            <label class="field">
+              <span>Unit</span>
+              <select id="rm-unit"><option value="kg">kg</option><option value="lb">lb</option></select>
+            </label>
+            <button class="btn" type="submit">Estimate</button>
+          </form>
+          <div id="rm-result" class="rm-result" hidden>
+            <p class="rm-value"><span id="rm-max">–</span></p>
+            <p class="rm-note">estimated one-rep max</p>
+            <div class="rm-percents" id="rm-percents"></div>
+            <p class="macro-note">Estimates guide training weights — never max out alone or with cold muscles.</p>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -407,7 +435,10 @@
           <div class="card journal-panel">
             <div class="journal-panel-head">
               <h3>Recent entries</h3>
-              <button type="button" class="link-btn" id="journal-clear">Clear</button>
+              <span>
+                <button type="button" class="link-btn" id="journal-export">Export CSV</button>
+                <button type="button" class="link-btn" id="journal-clear">Clear</button>
+              </span>
             </div>
             <ul class="journal-list" id="journal-list">
               <li class="journal-empty">No entries yet. Open Vita (💬) and try <em>"log weight 70kg"</em>.</li>
