@@ -18,6 +18,18 @@
   --font: "Segoe UI", system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif;
 }
 
+/* Dark theme overrides */
+:root[data-theme="dark"] {
+  --green-900: #0a2820;
+  --green-100: #17352a;
+  --ink: #eaf3ee;
+  --slate: #a7bcae;
+  --bg: #0e1a15;
+  --white: #16241d;
+  --shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 20px 50px rgba(0, 0, 0, 0.5);
+}
+
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
 body {
@@ -59,10 +71,20 @@ img { max-width: 100%; }
 /* ===== Header / Nav ===== */
 .site-header {
   position: sticky; top: 0; z-index: 50;
-  background: rgba(246, 250, 247, 0.85);
+  background: color-mix(in srgb, var(--bg) 85%, transparent);
   backdrop-filter: saturate(180%) blur(12px);
   border-bottom: 1px solid rgba(15, 61, 46, 0.07);
 }
+:root[data-theme="dark"] .site-header { border-bottom-color: rgba(255,255,255,0.08); }
+
+/* Theme toggle */
+.theme-toggle {
+  display: grid; place-items: center; width: 40px; height: 40px;
+  border-radius: 50%; border: 2px solid transparent; background: var(--green-100);
+  cursor: pointer; font-size: 1.1rem; transition: background .2s, transform .2s;
+}
+.theme-toggle:hover { transform: rotate(-15deg); background: color-mix(in srgb, var(--green-100) 70%, var(--green-500)); }
+.theme-toggle:focus-visible { outline: 3px solid var(--green-500); outline-offset: 2px; }
 .nav { display: flex; align-items: center; justify-content: space-between; height: 68px; }
 .brand { display: flex; align-items: center; gap: 8px; font-size: 1.25rem; font-weight: 600; color: var(--ink); }
 .brand-mark { font-size: 1.4rem; }
@@ -213,6 +235,55 @@ img { max-width: 100%; }
 .footer-links a:hover { color: #fff; }
 .copyright { text-align: center; margin: 34px 0 0; font-size: .85rem; color: #7fa593; }
 
+/* ===== Water tracker ===== */
+.water { max-width: 760px; margin: 0 auto; display: grid; grid-template-columns: 1.4fr 1fr; gap: 30px; align-items: center; }
+.water-glasses { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+.glass {
+  cursor: pointer; border: none; background: transparent; padding: 6px;
+  font-size: 2.4rem; line-height: 1; border-radius: var(--radius-sm);
+  filter: grayscale(1) opacity(.4); transition: filter .2s, transform .12s;
+}
+.glass:hover { transform: translateY(-3px); }
+.glass.filled { filter: none; }
+.glass:focus-visible { outline: 3px solid var(--green-500); outline-offset: 2px; }
+.water-readout { text-align: center; }
+.water-count { font-size: 2.2rem; font-weight: 800; color: var(--green-700); margin: 0; }
+.water-count small { font-size: .95rem; font-weight: 600; color: var(--slate); }
+.water-litres { color: var(--slate); margin: 2px 0 16px; }
+.water-controls { display: flex; gap: 10px; justify-content: center; }
+.water-msg { color: var(--green-600); font-weight: 600; min-height: 1.4em; margin: 12px 0 0; }
+
+/* ===== Workout planner ===== */
+.workout { max-width: 780px; margin: 0 auto; }
+.workout-fields { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 20px; }
+.field select {
+  padding: 12px 14px; border: 2px solid #dbe7df; border-radius: var(--radius-sm);
+  font-size: 1rem; font-family: inherit; background: var(--white); color: var(--ink);
+  cursor: pointer; transition: border-color .15s;
+}
+.field select:focus { outline: none; border-color: var(--green-500); }
+.workout-plan { max-width: 980px; margin: 34px auto 0; }
+.plan-head { text-align: center; margin-bottom: 24px; }
+.plan-head h3 { font-size: 1.5rem; }
+.plan-note { color: var(--slate); margin: 0; }
+.plan-grid { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); }
+.plan-day { border-top: 4px solid var(--green-500); }
+.plan-day.rest { border-top-color: #b7c7bd; }
+.plan-day h4 { margin: 0 0 4px; font-size: 1.1rem; }
+.plan-focus { font-size: .82rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--green-600); margin: 0 0 12px; }
+.plan-day ul { margin: 0; padding-left: 18px; color: var(--slate); }
+.plan-day ul li { margin-bottom: 5px; }
+.plan-day.rest .plan-focus { color: var(--slate); }
+
+/* ===== Dark-mode component tweaks ===== */
+:root[data-theme="dark"] .disclaimer { background: #2a2410; border-color: #4a3f18; color: #e8d9a3; }
+:root[data-theme="dark"] .field input,
+:root[data-theme="dark"] .field select { border-color: #2c463a; }
+:root[data-theme="dark"] .bmi-result { border-top-color: #2c463a; }
+:root[data-theme="dark"] .newsletter-form input { background: #0e1a15; color: var(--ink); }
+:root[data-theme="dark"] .plan-day.rest { border-top-color: #3a4c42; }
+:root[data-theme="dark"] .glass.filled { filter: none; }
+
 /* ===== Responsive ===== */
 @media (max-width: 900px) {
   .pillars-grid { grid-template-columns: repeat(2, 1fr); }
@@ -221,6 +292,8 @@ img { max-width: 100%; }
   .hero-art { min-height: 280px; order: -1; }
   .tracker { grid-template-columns: 1fr; }
   .newsletter-inner { grid-template-columns: 1fr; }
+  .water { grid-template-columns: 1fr; }
+  .workout-fields { grid-template-columns: 1fr; }
 }
 @media (max-width: 640px) {
   .nav-toggle { display: block; }

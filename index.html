@@ -8,6 +8,17 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="stylesheet" href="styles.css" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8C%BF%3C/text%3E%3C/svg%3E" />
+  <script>
+    // Apply saved/system theme before paint to avoid a flash of the wrong theme.
+    (function () {
+      try {
+        var saved = localStorage.getItem("vh-theme");
+        var dark = saved ? saved === "dark"
+          : window.matchMedia("(prefers-color-scheme: dark)").matches;
+        document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
+      } catch (e) {}
+    })();
+  </script>
 </head>
 <body>
   <header class="site-header" id="top">
@@ -21,9 +32,16 @@
       </button>
       <ul class="nav-menu" id="nav-menu">
         <li><a href="#pillars">Pillars</a></li>
-        <li><a href="#tracker">Habit Tracker</a></li>
+        <li><a href="#tracker">Habits</a></li>
+        <li><a href="#water">Water</a></li>
+        <li><a href="#workout">Workouts</a></li>
         <li><a href="#bmi">BMI Tool</a></li>
         <li><a href="#articles">Articles</a></li>
+        <li>
+          <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Toggle dark mode" title="Toggle dark mode">
+            <span class="theme-icon" aria-hidden="true">🌙</span>
+          </button>
+        </li>
         <li><a href="#newsletter" class="btn btn-small">Get Tips</a></li>
       </ul>
     </nav>
@@ -136,6 +154,78 @@
       </div>
     </section>
 
+    <!-- Water Intake Tracker -->
+    <section id="water" class="section">
+      <div class="container">
+        <div class="section-head">
+          <h2>Water intake tracker</h2>
+          <p>Tap a glass to log it. Aim for 8 glasses (about 2 litres) a day — saved for today.</p>
+        </div>
+        <div class="water card">
+          <div class="water-glasses" id="water-glasses" role="group" aria-label="Glasses of water">
+            <!-- glasses injected by script.js -->
+          </div>
+          <div class="water-readout">
+            <p class="water-count"><span id="water-current">0</span> <small>/ <span id="water-goal">8</span> glasses</small></p>
+            <p class="water-litres" id="water-litres">0.0 L logged</p>
+            <div class="water-controls">
+              <button type="button" class="btn btn-ghost btn-small" id="water-minus">– Remove</button>
+              <button type="button" class="btn btn-small" id="water-plus">+ Add glass</button>
+            </div>
+            <p class="water-msg" id="water-msg" role="status"></p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Workout Planner -->
+    <section id="workout" class="section section-alt">
+      <div class="container">
+        <div class="section-head">
+          <h2>Workout planner</h2>
+          <p>Pick a goal, your experience, and how many days you can train. We'll build a weekly split.</p>
+        </div>
+        <form class="workout card" id="workout-form">
+          <div class="workout-fields">
+            <label class="field">
+              <span>Goal</span>
+              <select id="wk-goal">
+                <option value="general">General fitness</option>
+                <option value="strength">Build strength</option>
+                <option value="weight">Lose weight</option>
+                <option value="endurance">Improve endurance</option>
+              </select>
+            </label>
+            <label class="field">
+              <span>Experience</span>
+              <select id="wk-level">
+                <option value="beginner">Beginner</option>
+                <option value="intermediate">Intermediate</option>
+                <option value="advanced">Advanced</option>
+              </select>
+            </label>
+            <label class="field">
+              <span>Days per week</span>
+              <select id="wk-days">
+                <option value="2">2 days</option>
+                <option value="3" selected>3 days</option>
+                <option value="4">4 days</option>
+                <option value="5">5 days</option>
+              </select>
+            </label>
+          </div>
+          <button type="submit" class="btn">Build my plan</button>
+        </form>
+        <div class="workout-plan" id="workout-plan" hidden>
+          <div class="plan-head">
+            <h3 id="plan-title">Your weekly plan</h3>
+            <p id="plan-note" class="plan-note"></p>
+          </div>
+          <div class="grid plan-grid" id="plan-grid"></div>
+        </div>
+      </div>
+    </section>
+
     <!-- BMI Calculator -->
     <section id="bmi" class="section">
       <div class="container">
@@ -192,6 +282,24 @@
             <h3>Build a wind-down routine</h3>
             <p>A repeatable evening ritual that signals your body it's time to rest — and stick to it.</p>
             <span class="read-more">6 min read →</span>
+          </article>
+          <article class="card article">
+            <div class="article-tag">Mind</div>
+            <h3>2-minute breathing resets</h3>
+            <p>Box breathing and physiological sighs you can do anywhere to calm your nervous system fast.</p>
+            <span class="read-more">3 min read →</span>
+          </article>
+          <article class="card article">
+            <div class="article-tag">Hydration</div>
+            <h3>How much water do you really need?</h3>
+            <p>Forget rigid rules. Here's how to read your own body's signals and stay properly hydrated.</p>
+            <span class="read-more">4 min read →</span>
+          </article>
+          <article class="card article">
+            <div class="article-tag">Strength</div>
+            <h3>Strength training after 40</h3>
+            <p>It's never too late to start. A gentle, progressive approach to building muscle safely.</p>
+            <span class="read-more">7 min read →</span>
           </article>
         </div>
       </div>
