@@ -89,6 +89,9 @@ img { max-width: 100%; }
 .view-toggle:hover { background: var(--green-100); }
 .view-toggle:focus-visible { outline: 3px solid var(--green-500); outline-offset: 2px; }
 :root[data-theme="dark"] .view-toggle { color: var(--green-500); }
+.install-btn { background: var(--green-600); border-color: var(--green-600); color: #fff; }
+.install-btn:hover { background: var(--green-700); }
+:root[data-theme="dark"] .install-btn { color: #fff; }
 .wunit-toggle {
   min-width: 44px; height: 40px; border: none; border-radius: 999px;
   background: var(--green-100); color: var(--green-700); font-weight: 800;

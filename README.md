@@ -59,9 +59,22 @@ A clean, responsive **health & wellness website** — evidence-based guidance pl
 
 > ⚕️ This site is for general education only and is **not medical advice**. Consult a qualified healthcare professional for personal guidance.
 
-## Run it
+## 📲 It's an app (PWA)
 
-No dependencies. Just open the file, or serve the folder:
+Vitality Health is an installable **Progressive Web App**:
+
+- **Install it** — tap the "📲 Install" button in the nav (Chrome/Edge/Android), or
+  Share → *Add to Home Screen* on iOS Safari. It opens full-screen with its own
+  icon, like a native app.
+- **Works offline** — a service worker caches the whole app, so trackers, Vita,
+  and the Health A–Z all work with no connection. Your data lives in
+  `localStorage` on the device either way.
+- **Deploys itself** — pushing to the default branch publishes the app to GitHub
+  Pages via `.github/workflows/pages.yml`.
+
+## Run it locally
+
+No dependencies. Serve the folder (a server is needed for the service worker):
 
 ```bash
 python3 -m http.server 8000
@@ -75,3 +88,7 @@ python3 -m http.server 8000
 | `index.html` | Page structure and content |
 | `styles.css` | Styling, layout, dark theme, responsive rules |
 | `script.js`  | Vita assistant, health journal, reminders, habit & water trackers, workout planner, BMI tool, dark mode, nav |
+| `manifest.webmanifest` | PWA identity: name, icons, standalone display |
+| `sw.js` | Service worker: offline-first app-shell caching |
+| `icons/` | App icons (192/512, maskable, apple-touch) |
+| `.github/workflows/pages.yml` | GitHub Pages deploy |
