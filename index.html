@@ -38,7 +38,7 @@
       <ul class="nav-menu" id="nav-menu">
         <li><a href="#pillars">Pillars</a></li>
         <li><a href="#tracker">Habits</a></li>
-        <li><a href="#water">Water</a></li>
+        <li><a href="#topics">Health A–Z</a></li>
         <li class="nav-adv"><a href="#workout">Workouts</a></li>
         <li><a href="#journal">Journal</a></li>
         <li><a href="#trends">Trends</a></li>
@@ -495,8 +495,26 @@
       </div>
     </section>
 
+    <!-- Health A–Z topics library -->
+    <section id="topics" class="section section-alt">
+      <div class="container">
+        <div class="section-head">
+          <h2>Health A–Z</h2>
+          <p>Quick, practical guides to the things people actually deal with — each curated from a renowned health organization, with a link to the full expert guidance.</p>
+        </div>
+        <div class="topics-controls">
+          <label class="sr-only" for="topic-search">Search health topics</label>
+          <input type="search" id="topic-search" class="topic-search" placeholder="Search: sleep, blood pressure, stress…" />
+          <div class="topic-chips" id="topic-chips" role="group" aria-label="Filter by category"></div>
+        </div>
+        <div class="topics-list" id="topics-grid"><!-- topic rows injected by script.js --></div>
+        <p class="topics-empty" id="topics-empty" hidden>No topics match — try a different word, or ask Vita 💬</p>
+        <p class="topics-sources">Sources include the WHO · CDC · NIH · APA · American Heart Association · American Academy of Dermatology · American Cancer Society · Sleep Foundation · American Lung Association · Urology Care Foundation · Office on Women's Health · AAFA. Educational only — always see a professional for personal advice.</p>
+      </div>
+    </section>
+
     <!-- Articles -->
-    <section id="articles" class="section section-alt">
+    <section id="articles" class="section">
       <div class="container">
         <div class="section-head">
           <h2>Latest from the blog</h2>

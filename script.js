@@ -685,18 +685,30 @@
     var low = text.toLowerCase();
     if (!text) return "Type something like \"log water\" or \"remind me to walk in 1 hour\".";
 
+    // Informational questions about serious conditions ("what is a stroke")
+    // get educational answers; first-person urgency still routes to crisis.
+    var askPat = /\b(tell me about|what is|what's|learn about|info(?:rmation)? (?:on|about)|explain|help with)\b/;
+    var urgentPat = /\b(i'?m|i am|my|me|right now|happening|having|help me)\b/;
     if (CRISIS.test(low)) {
+      if (askPat.test(low) && !urgentPat.test(low)) {
+        var infoTopic = findTopic(low);
+        if (infoTopic) {
+          return topicReply(infoTopic) +
+            "\n\n🚨 If this is happening to you or someone near you right now, call your local emergency number immediately.";
+        }
+      }
       return "That sounds serious, and I'm only a wellness helper — not a medical service. " +
         "Please contact your local emergency number or a crisis line right away, or reach out to someone you trust. You deserve real support. 💚";
     }
 
-    // Help
-    if (/^(help|what can you do|commands|\?)/.test(low)) {
+    // Help (exact command only, so "help with <topic>" reaches the library)
+    if (/^(help|commands|\?)[\s!.]*$/.test(low) || /what can you do/.test(low)) {
       return "I can log your health and remind you. Try:\n" +
         "• \"log weight 70kg\"\n• \"log water\" (or \"drank 2 glasses\")\n" +
         "• \"slept 7.5 hours\"\n• \"log 8000 steps\"\n• \"feeling great\"\n" +
         "• \"log workout 30 min run\"\n• \"log bench 80kg x 5\" (I'll estimate your 1RM)\n" +
         "• \"remind me to stretch in 30 minutes\"\n" +
+        "• \"tell me about blood pressure\" (or any Health A–Z topic)\n" +
         "• \"summary\" for today's recap\n• \"export my data\" for a CSV download.";
     }
 
@@ -705,6 +717,13 @@
       return "Hi! 🌿 I'm Vita. Tell me how you're doing — e.g. \"log water\" or \"slept 8 hours\". Say \"help\" for ideas.";
     if (/\b(thanks|thank you|cheers|ty)\b/.test(low))
       return "Anytime! Keep up the great work. 💚";
+
+    // Health A–Z lookups ("tell me about blood pressure") — only replies
+    // when a known topic matches, so other commands fall through untouched.
+    if (askPat.test(low)) {
+      var topic = findTopic(low);
+      if (topic) return topicReply(topic);
+    }
 
     // Clear
     if (/\bclear\b.*\breminder/.test(low) || /\breminder.*\bclear\b/.test(low)) {
@@ -1602,6 +1621,285 @@
     applyWUnit(true);
   });
   applyWUnit(false);
+
+  /* =====================================================================
+     Health A–Z — curated guidance from renowned health organizations,
+     each topic linking to its authoritative source. Also powers Vita's
+     "tell me about ..." answers.
+     ===================================================================== */
+  var TOPIC_CATS = {
+    heart: "Heart & blood", mind: "Mind", sleep: "Sleep",
+    bones: "Bones & muscles", breath: "Breathing & allergy", gut: "Digestion & metabolism",
+    skin: "Skin & sun", sense: "Eyes, ears & teeth",
+    women: "Women's health", men: "Men's health", prev: "Prevention & habits",
+  };
+  var TOPICS = [
+    { emoji: "🫀", name: "High blood pressure", cat: "heart", keys: ["blood pressure", "hypertension"],
+      blurb: "Usually has no symptoms — that's why it's called the silent killer.",
+      tips: ["Get it checked regularly, even if you feel fine", "Cut back on salt and processed foods", "Daily movement and a healthy weight lower it"],
+      src: { label: "WHO", url: "https://www.who.int/news-room/fact-sheets/detail/hypertension" } },
+    { emoji: "❤️", name: "Heart health", cat: "heart", keys: ["heart health", "heart disease", "cardio"],
+      blurb: "Most heart disease is preventable with everyday habits.",
+      tips: ["Know your numbers: blood pressure, cholesterol, blood sugar", "Aim for 150 minutes of activity a week", "Don't smoke — quitting helps at any age"],
+      src: { label: "American Heart Association", url: "https://www.heart.org" } },
+    { emoji: "🩸", name: "High cholesterol", cat: "heart", keys: ["cholesterol"],
+      blurb: "No symptoms — only a blood test can tell you where you stand.",
+      tips: ["Get tested and know your levels", "Eat more fiber: oats, beans, fruit and veg", "Regular exercise raises the good (HDL) kind"],
+      src: { label: "CDC", url: "https://www.cdc.gov/cholesterol/" } },
+    { emoji: "🍬", name: "Type 2 diabetes", cat: "gut", keys: ["diabetes", "blood sugar", "glucose"],
+      blurb: "Largely preventable and manageable with lifestyle changes.",
+      tips: ["Regular activity and a healthy weight cut your risk sharply", "Choose whole grains over refined carbs", "Know your risk — a simple test can catch it early"],
+      src: { label: "WHO", url: "https://www.who.int/news-room/fact-sheets/detail/diabetes" } },
+    { emoji: "⚖️", name: "Weight management", cat: "gut", keys: ["obesity", "overweight", "lose weight", "weight management"],
+      blurb: "Sustainable beats drastic — small changes you can keep win.",
+      tips: ["Build meals around protein, fiber and vegetables", "Strength training preserves muscle while losing fat", "Sleep and stress strongly affect appetite"],
+      src: { label: "WHO", url: "https://www.who.int/news-room/fact-sheets/detail/obesity-and-overweight" } },
+    { emoji: "🔥", name: "Heartburn & reflux", cat: "gut", keys: ["heartburn", "reflux", "gerd", "acid"],
+      blurb: "Common and very manageable with a few habit changes.",
+      tips: ["Eat smaller meals, and not close to bedtime", "Raise the head of your bed if nights are bad", "Notice your triggers — often coffee, alcohol, fried food"],
+      src: { label: "NIH (NIDDK)", url: "https://www.niddk.nih.gov/health-information/digestive-diseases/acid-reflux-ger-gerd-adults" } },
+    { emoji: "😰", name: "Anxiety", cat: "mind", keys: ["anxiety", "panic", "worry"],
+      blurb: "One of the most common — and most treatable — mental health conditions.",
+      tips: ["Slow breathing calms your nervous system fast", "Limit caffeine and prioritise sleep", "Talking therapies work — reaching out is strength"],
+      src: { label: "NIH (NIMH)", url: "https://www.nimh.nih.gov/health/topics/anxiety-disorders" } },
+    { emoji: "💙", name: "Depression", cat: "mind", keys: ["depression", "depressed", "low mood"],
+      blurb: "A real illness, not a weakness — and it responds to treatment.",
+      tips: ["Movement and daylight genuinely help mood", "Stay connected — isolation feeds it", "Talk to a professional; you don't have to carry it alone"],
+      src: { label: "WHO", url: "https://www.who.int/news-room/fact-sheets/detail/depression" } },
+    { emoji: "🧠", name: "Stress", cat: "mind", keys: ["stress", "burnout", "overwhelmed"],
+      blurb: "Short bursts are normal; chronic stress wears the whole body down.",
+      tips: ["Take micro-breaks — even 2 minutes of breathing counts", "Protect sleep; stress and sleep loss feed each other", "Connection with people is a powerful buffer"],
+      src: { label: "American Psychological Association", url: "https://www.apa.org/topics/stress" } },
+    { emoji: "⚡", name: "Migraine", cat: "mind", keys: ["migraine", "headache"],
+      blurb: "More than a headache — a neurological condition with real treatments.",
+      tips: ["Keep a diary to spot your triggers", "Regular sleep, meals and hydration prevent attacks", "See a doctor — modern treatments help most people"],
+      src: { label: "WHO", url: "https://www.who.int/news-room/fact-sheets/detail/headache-disorders" } },
+    { emoji: "🌙", name: "Insomnia", cat: "sleep", keys: ["insomnia", "can't sleep", "trouble sleeping"],
+      blurb: "The fix is usually habits, not willpower.",
+      tips: ["Wake at the same time every day — even weekends", "Keep the room cool, dark and quiet", "No screens in the last hour; wind down instead"],
+      src: { label: "Sleep Foundation", url: "https://www.sleepfoundation.org/insomnia" } },
+    { emoji: "😴", name: "Snoring & sleep apnea", cat: "sleep", keys: ["snoring", "apnea", "apnoea"],
+      blurb: "Loud snoring plus daytime sleepiness is worth getting checked.",
+      tips: ["Side-sleeping often reduces snoring", "Weight loss can improve it significantly", "Untreated apnea strains the heart — ask about a sleep study"],
+      src: { label: "Sleep Foundation", url: "https://www.sleepfoundation.org/sleep-apnea" } },
+    { emoji: "🦴", name: "Lower back pain", cat: "bones", keys: ["back pain", "backache", "lower back"],
+      blurb: "Most back pain improves within weeks — movement helps, rest doesn't.",
+      tips: ["Keep gently moving; bed rest slows recovery", "Strengthen your core to protect your spine", "Numbness, weakness or fever with it → see a doctor"],
+      src: { label: "NIH (NINDS)", url: "https://www.ninds.nih.gov/health-information/disorders/back-pain" } },
+    { emoji: "🦵", name: "Osteoarthritis", cat: "bones", keys: ["arthritis", "joint pain", "osteoarthritis"],
+      blurb: "\"Motion is lotion\" — active joints hurt less than idle ones.",
+      tips: ["Strengthen the muscles around the joint", "Joint-friendly cardio: swimming, cycling, walking", "Every kilo lost takes several off your knees"],
+      src: { label: "CDC", url: "https://www.cdc.gov/arthritis/" } },
+    { emoji: "🤧", name: "Seasonal allergies", cat: "breath", keys: ["allergy", "allergies", "hay fever", "pollen"],
+      blurb: "You can't avoid pollen entirely, but you can outsmart it.",
+      tips: ["Check pollen counts and plan outdoor time", "Shower and change clothes after being outside", "Keep windows closed on high-pollen days"],
+      src: { label: "AAFA", url: "https://aafa.org" } },
+    { emoji: "🌬️", name: "Asthma", cat: "breath", keys: ["asthma", "wheez", "inhaler"],
+      blurb: "Well-controlled asthma shouldn't limit your life.",
+      tips: ["Take controller medication as prescribed, even when fine", "Know your triggers: smoke, cold air, dust, exercise", "Have a written action plan for flare-ups"],
+      src: { label: "WHO", url: "https://www.who.int/news-room/fact-sheets/detail/asthma" } },
+    { emoji: "🤒", name: "Colds & flu", cat: "breath", keys: ["cold", "flu", "influenza", "sick"],
+      blurb: "Mostly prevention: hands, vaccines, and rest when it hits.",
+      tips: ["Wash hands often — it's still the best defense", "An annual flu vaccine protects you and others", "Rest and fluids; see a doctor if symptoms are severe"],
+      src: { label: "CDC", url: "https://www.cdc.gov/flu/" } },
+    { emoji: "🚨", name: "Stroke", cat: "heart", keys: ["stroke", "fast signs"],
+      blurb: "Every minute counts — knowing the signs saves brains.",
+      tips: ["Think F.A.S.T.: Face drooping, Arm weakness, Speech trouble → Time to call emergency services", "Blood pressure control is the #1 prevention", "Most risk factors are the same as heart disease"],
+      src: { label: "CDC", url: "https://www.cdc.gov/stroke/" } },
+    { emoji: "🔴", name: "Anemia", cat: "heart", keys: ["anemia", "anaemia", "iron", "low iron"],
+      blurb: "Constant tiredness and pale skin can mean low iron — a blood test tells.",
+      tips: ["Iron-rich foods: beans, lentils, red meat, fortified cereals", "Vitamin C helps your body absorb iron", "Don't self-diagnose fatigue — get tested first"],
+      src: { label: "NIH (NHLBI)", url: "https://www.nhlbi.nih.gov/health/anemia" } },
+    { emoji: "🌀", name: "Irritable bowel (IBS)", cat: "gut", keys: ["ibs", "irritable bowel"],
+      blurb: "Very common, very manageable — and strongly linked to stress.",
+      tips: ["Keep a food diary to find your triggers", "Soluble fiber (oats) usually helps; harsh bran can worsen", "Stress management often helps as much as diet"],
+      src: { label: "NIH (NIDDK)", url: "https://www.niddk.nih.gov/health-information/digestive-diseases/irritable-bowel-syndrome" } },
+    { emoji: "🥦", name: "Constipation", cat: "gut", keys: ["constipation", "constipated"],
+      blurb: "Usually fixed by the big three: fiber, fluids, and movement.",
+      tips: ["Aim for gradual fiber increases, not sudden ones", "Drink more water as you add fiber", "A daily walk genuinely gets things moving"],
+      src: { label: "NIH (NIDDK)", url: "https://www.niddk.nih.gov/health-information/digestive-diseases/constipation" } },
+    { emoji: "🦋", name: "Thyroid issues", cat: "gut", keys: ["thyroid", "hypothyroid", "hyperthyroid"],
+      blurb: "A tiny gland with huge effects on energy, weight, and mood.",
+      tips: ["Unexplained fatigue or weight change? Ask for a TSH blood test", "Both over- and under-active thyroid are very treatable", "Symptoms creep in slowly — easy to miss for years"],
+      src: { label: "American Thyroid Association", url: "https://www.thyroid.org" } },
+    { emoji: "🥜", name: "Food allergies", cat: "gut", keys: ["food allergy", "food allergies", "peanut", "anaphylaxis"],
+      blurb: "Serious reactions need a plan, not luck.",
+      tips: ["Read every label, every time — recipes change", "If prescribed epinephrine, carry two and know how to use them", "Mild symptoms can escalate — take reactions seriously"],
+      src: { label: "FARE", url: "https://www.foodallergy.org" } },
+    { emoji: "🎯", name: "ADHD", cat: "mind", keys: ["adhd", "attention deficit", "focus problems"],
+      blurb: "Not just kids — many adults discover it late, and treatment changes lives.",
+      tips: ["External structure beats willpower: lists, timers, routines", "Exercise measurably improves focus", "A proper assessment beats self-diagnosis from social media"],
+      src: { label: "NIH (NIMH)", url: "https://www.nimh.nih.gov/health/topics/attention-deficit-hyperactivity-disorder-adhd" } },
+    { emoji: "🕊️", name: "Grief & loss", cat: "mind", keys: ["grief", "grieving", "bereavement", "loss"],
+      blurb: "There's no correct timeline — grief is love with nowhere to go.",
+      tips: ["Waves are normal; they space out with time", "Keep eating, sleeping and moving — basics carry you", "If it stays overwhelming for months, grief counselling helps"],
+      src: { label: "American Psychological Association", url: "https://www.apa.org/topics/grief" } },
+    { emoji: "🛌", name: "Restless legs", cat: "sleep", keys: ["restless legs", "rls"],
+      blurb: "That irresistible urge to move at night is a real, treatable condition.",
+      tips: ["Check iron levels — low iron is a common cause", "Evening caffeine and alcohol make it worse", "Gentle stretching before bed can calm it"],
+      src: { label: "Sleep Foundation", url: "https://www.sleepfoundation.org/restless-legs-syndrome" } },
+    { emoji: "🩻", name: "Osteoporosis", cat: "bones", keys: ["osteoporosis", "bone density", "brittle bones"],
+      blurb: "Bones thin silently — the first sign is often a fracture.",
+      tips: ["Weight-bearing exercise builds bone at any age", "Get enough calcium and vitamin D", "Ask about a bone density scan after menopause or 65+"],
+      src: { label: "NIH (NIAMS)", url: "https://www.niams.nih.gov/health-topics/osteoporosis" } },
+    { emoji: "🤕", name: "Sprains & strains", cat: "bones", keys: ["sprain", "strain", "twisted ankle"],
+      blurb: "R.I.C.E. first, then gentle movement — not weeks of rest.",
+      tips: ["First 48h: Rest, Ice, Compression, Elevation", "Start gentle range-of-motion as pain allows", "Can't bear weight at all? Get it checked for a fracture"],
+      src: { label: "NIH (NIAMS)", url: "https://www.niams.nih.gov/health-topics/sprains-and-strains" } },
+    { emoji: "🫁", name: "COPD", cat: "breath", keys: ["copd", "emphysema", "chronic bronchitis"],
+      blurb: "Mostly caused by smoking — and quitting helps at every stage.",
+      tips: ["Quitting smoking is the single biggest step", "Pulmonary rehab genuinely improves breathing and stamina", "Get flu and pneumonia vaccines — infections hit harder"],
+      src: { label: "American Lung Association", url: "https://www.lung.org" } },
+    { emoji: "🦠", name: "COVID-19", cat: "breath", keys: ["covid", "coronavirus"],
+      blurb: "Still around — still worth basic precautions if you're higher-risk.",
+      tips: ["Stay up to date with recommended vaccines", "Test when symptomatic before visiting vulnerable people", "Ventilation and fresh air cut transmission"],
+      src: { label: "CDC", url: "https://www.cdc.gov/covid/" } },
+    { emoji: "🧴", name: "Acne", cat: "skin", keys: ["acne", "pimples", "breakout"],
+      blurb: "Not about being unclean — it's hormones, genetics, and pores.",
+      tips: ["Be gentle: harsh scrubbing makes it worse", "Give any new routine 8–12 weeks to work", "Persistent acne responds well to dermatologist treatment"],
+      src: { label: "American Academy of Dermatology", url: "https://www.aad.org/public/diseases/acne" } },
+    { emoji: "🩹", name: "Eczema", cat: "skin", keys: ["eczema", "dermatitis", "itchy skin"],
+      blurb: "A leaky skin barrier — moisture is the medicine.",
+      tips: ["Moisturise daily, especially right after showers", "Short, lukewarm showers beat long hot ones", "Fragrance-free everything: soap, detergent, lotion"],
+      src: { label: "American Academy of Dermatology", url: "https://www.aad.org/public/diseases/eczema" } },
+    { emoji: "☀️", name: "Sun safety & skin cancer", cat: "skin", keys: ["sunburn", "sunscreen", "skin cancer", "melanoma", "mole"],
+      blurb: "The most preventable cancer — and the easiest to catch early.",
+      tips: ["Broad-spectrum SPF 30+ whenever you're out for long", "Know your moles: Asymmetry, Border, Color, Diameter, Evolving", "One bad sunburn does lasting damage — shade at midday"],
+      src: { label: "Skin Cancer Foundation", url: "https://www.skincancer.org" } },
+    { emoji: "💇", name: "Hair loss", cat: "skin", keys: ["hair loss", "balding", "thinning hair"],
+      blurb: "Common, often treatable — and earlier is easier.",
+      tips: ["Sudden shedding is often stress or illness and grows back", "Proven treatments exist — the earlier, the better", "Crash diets and low iron both thin hair"],
+      src: { label: "American Academy of Dermatology", url: "https://www.aad.org/public/diseases/hair-loss" } },
+    { emoji: "👁️", name: "Digital eye strain", cat: "sense", keys: ["eye strain", "dry eyes", "screen eyes", "vision"],
+      blurb: "Screens don't damage eyes — but they do exhaust them.",
+      tips: ["20-20-20: every 20 minutes, look 20 feet away for 20 seconds", "Blink more — screen staring halves your blink rate", "Yearly eye exams catch problems glasses can fix"],
+      src: { label: "American Academy of Ophthalmology", url: "https://www.aao.org/eye-health" } },
+    { emoji: "👂", name: "Hearing protection", cat: "sense", keys: ["hearing", "tinnitus", "ear ringing", "loud noise"],
+      blurb: "Noise damage is permanent — but completely preventable.",
+      tips: ["If others can hear your earbuds, they're too loud", "60/60 rule: max 60% volume for max 60 minutes", "Ringing after a loud night is a warning, not a quirk"],
+      src: { label: "NIH (NIDCD)", url: "https://www.nidcd.nih.gov/health/noise-induced-hearing-loss" } },
+    { emoji: "🦷", name: "Gum & oral health", cat: "sense", keys: ["teeth", "gums", "dental", "cavity", "oral health"],
+      blurb: "Your mouth is connected to your heart — literally.",
+      tips: ["Brush twice daily for two minutes; floss once", "Bleeding gums aren't normal — they're early gum disease", "Regular dental checks catch problems while they're small"],
+      src: { label: "CDC", url: "https://www.cdc.gov/oral-health/" } },
+    { emoji: "🌸", name: "PCOS", cat: "women", keys: ["pcos", "polycystic"],
+      blurb: "One of the most common hormonal conditions — and often undiagnosed.",
+      tips: ["Irregular periods + acne or excess hair? Ask about PCOS", "Exercise and weight management improve symptoms markedly", "It's linked to diabetes risk — worth managing early"],
+      src: { label: "Office on Women's Health", url: "https://www.womenshealth.gov/a-z-topics/polycystic-ovary-syndrome" } },
+    { emoji: "🌡️", name: "Menopause", cat: "women", keys: ["menopause", "perimenopause", "hot flashes", "hot flushes"],
+      blurb: "A transition, not an illness — but you don't have to white-knuckle it.",
+      tips: ["Hot flashes, sleep and mood changes are all treatable", "Strength training protects bone and muscle now", "Talk to a doctor about options — including hormone therapy"],
+      src: { label: "NIH (NIA)", url: "https://www.nia.nih.gov/health/menopause" } },
+    { emoji: "🩷", name: "Period pain & PMS", cat: "women", keys: ["period", "pms", "cramps", "menstrual"],
+      blurb: "Common — but pain that derails your life isn't something to just endure.",
+      tips: ["Heat and regular exercise genuinely reduce cramps", "Track symptoms — patterns make treatment easier", "Severe pain can be endometriosis — push for answers"],
+      src: { label: "Office on Women's Health", url: "https://www.womenshealth.gov/a-z-topics/premenstrual-syndrome" } },
+    { emoji: "🤰", name: "Pregnancy basics", cat: "women", keys: ["pregnancy", "pregnant", "prenatal", "folic acid"],
+      blurb: "The essentials: early care, key vitamins, and honest conversations.",
+      tips: ["Folic acid before and during early pregnancy prevents birth defects", "Book prenatal care as early as you can", "No known safe amount of alcohol in pregnancy"],
+      src: { label: "CDC", url: "https://www.cdc.gov/pregnancy/" } },
+    { emoji: "🎀", name: "Breast health", cat: "women", keys: ["breast", "mammogram"],
+      blurb: "Know your normal — changes found early are highly treatable.",
+      tips: ["Learn how your breasts normally look and feel", "Report new lumps, skin or nipple changes promptly", "Follow mammogram screening advice for your age and risk"],
+      src: { label: "American Cancer Society", url: "https://www.cancer.org" } },
+    { emoji: "👨‍⚕️", name: "Prostate health", cat: "men", keys: ["prostate", "psa"],
+      blurb: "Very common with age — and very survivable when caught early.",
+      tips: ["Discuss PSA screening with your doctor from ~50 (45 if higher risk)", "Weak stream or frequent night trips? Get it checked", "Most prostate changes are benign — but check, don't guess"],
+      src: { label: "Urology Care Foundation", url: "https://www.urologyhealth.org" } },
+    { emoji: "🔋", name: "Low testosterone", cat: "men", keys: ["testosterone", "low t"],
+      blurb: "Real when it's real — but fatigue alone usually isn't it.",
+      tips: ["Sleep, strength training and weight loss raise it naturally", "Get proper morning blood tests before any treatment", "Skip unregulated 'T boosters' — most do nothing"],
+      src: { label: "Urology Care Foundation", url: "https://www.urologyhealth.org" } },
+    { emoji: "💊", name: "Erectile dysfunction", cat: "men", keys: ["erectile", " ed", "impotence"],
+      blurb: "Often an early warning light for heart health — worth a real checkup.",
+      tips: ["It's common and very treatable — talk to a doctor", "The same habits that help your heart help here", "It can flag blood-vessel problems years early"],
+      src: { label: "NIH (NIDDK)", url: "https://www.niddk.nih.gov/health-information/urologic-diseases/erectile-dysfunction" } },
+    { emoji: "🧢", name: "Men's mental health", cat: "men", keys: ["men's mental health", "mens mental"],
+      blurb: "Men seek help less and suffer more silently — talking works.",
+      tips: ["Irritability and overworking can be depression in disguise", "One honest conversation is a strong first step", "Therapy is a tool, not a verdict"],
+      src: { label: "NIH (NIMH)", url: "https://www.nimh.nih.gov/health/topics/men-and-mental-health" } },
+    { emoji: "💉", name: "Vaccinations", cat: "prev", keys: ["vaccine", "vaccination", "immunization", "shots"],
+      blurb: "One of the biggest life-savers in medical history — for adults too.",
+      tips: ["Adults need boosters: tetanus, flu, and more with age", "Vaccines protect the people around you as well", "Check your schedule — many adults are behind without knowing"],
+      src: { label: "CDC", url: "https://www.cdc.gov/vaccines/" } },
+    { emoji: "🚭", name: "Quitting smoking", cat: "prev", keys: ["smoking", "quit smoking", "nicotine", "vaping"],
+      blurb: "The single best thing a smoker can do for their health — at any age.",
+      tips: ["Benefits start within 20 minutes of the last cigarette", "Meds + support double or triple your odds vs willpower alone", "Slips aren't failure — most people need several attempts"],
+      src: { label: "Smokefree.gov (NIH)", url: "https://smokefree.gov" } },
+    { emoji: "🍷", name: "Alcohol & health", cat: "prev", keys: ["alcohol", "drinking", "hangover"],
+      blurb: "Less is better — and 'moderate' is smaller than most people think.",
+      tips: ["Keep several alcohol-free days each week", "Alcohol quietly wrecks sleep quality", "If cutting down feels hard, that's information — support helps"],
+      src: { label: "NIH (NIAAA)", url: "https://www.rethinkingdrinking.niaaa.nih.gov" } },
+  ];
+
+  function findTopic(low) {
+    for (var ti = 0; ti < TOPICS.length; ti++) {
+      var tp = TOPICS[ti];
+      for (var ki = 0; ki < tp.keys.length; ki++) {
+        if (low.indexOf(tp.keys[ki]) !== -1) return tp;
+      }
+    }
+    return null;
+  }
+  function topicReply(tp) {
+    return tp.emoji + " " + tp.name + "\n" + tp.blurb + "\n" +
+      tp.tips.map(function (x) { return "• " + x; }).join("\n") +
+      "\nSource: " + tp.src.label + " — the full guide is linked in the Health A–Z section.";
+  }
+
+  var topicsGrid = document.getElementById("topics-grid");
+  var topicsEmpty = document.getElementById("topics-empty");
+  var topicSearch = document.getElementById("topic-search");
+  var topicChipsWrap = document.getElementById("topic-chips");
+  var topicCat = "all";
+
+  function topicMatches(t, q) {
+    if (topicCat !== "all" && t.cat !== topicCat) return false;
+    if (!q) return true;
+    var hay = (t.name + " " + t.keys.join(" ") + " " + t.blurb).toLowerCase();
+    return hay.indexOf(q) !== -1;
+  }
+  function renderTopics() {
+    if (!topicsGrid) return;
+    var q = topicSearch ? topicSearch.value.trim().toLowerCase() : "";
+    var shown = TOPICS.filter(function (t) { return topicMatches(t, q); })
+      .slice().sort(function (a, b) { return a.name.localeCompare(b.name); });
+    var html = "", lastLetter = "";
+    shown.forEach(function (t) {
+      var letter = t.name.charAt(0).toUpperCase();
+      if (letter !== lastLetter) {
+        html += '<h3 class="topic-letter">' + letter + "</h3>";
+        lastLetter = letter;
+      }
+      html += '<details class="topic-row"><summary>' +
+        '<span class="topic-row-emoji" aria-hidden="true">' + t.emoji + "</span>" +
+        '<span class="topic-row-name">' + t.name + "</span>" +
+        '<span class="topic-row-cat">' + TOPIC_CATS[t.cat] + "</span>" +
+        '<span class="topic-chevron" aria-hidden="true">▾</span></summary>' +
+        '<div class="topic-body"><p>' + t.blurb + "</p><ul>" +
+        t.tips.map(function (x) { return "<li>" + x + "</li>"; }).join("") +
+        '</ul><a class="topic-src" href="' + t.src.url + '" target="_blank" rel="noopener">Full guide: ' + t.src.label + " →</a></div></details>";
+    });
+    topicsGrid.innerHTML = html;
+    if (topicsEmpty) topicsEmpty.hidden = shown.length > 0;
+  }
+  if (topicChipsWrap) {
+    var cats = [["all", "All"]].concat(Object.keys(TOPIC_CATS).map(function (k) { return [k, TOPIC_CATS[k]]; }));
+    topicChipsWrap.innerHTML = cats.map(function (c) {
+      return '<button type="button" class="tchip' + (c[0] === "all" ? " active" : "") + '" data-cat="' + c[0] + '">' + c[1] + "</button>";
+    }).join("");
+    topicChipsWrap.addEventListener("click", function (e) {
+      var chip = e.target.closest(".tchip");
+      if (!chip) return;
+      topicCat = chip.dataset.cat;
+      topicChipsWrap.querySelectorAll(".tchip").forEach(function (b) {
+        b.classList.toggle("active", b === chip);
+      });
+      renderTopics();
+    });
+  }
+  if (topicSearch) topicSearch.addEventListener("input", renderTopics);
+  renderTopics();
 
   /* ===== Newsletter (client-side demo only) ===== */
   var nlForm = document.getElementById("newsletter-form");
