@@ -1500,12 +1500,14 @@
     };
   }
 
-  // Auto-open once per tab session; otherwise nudge with the greeting bubble.
+  // Auto-open once per tab session on larger screens; on phones the panel
+  // would cover the whole page, so just nudge with the greeting bubble.
   var openedThisSession = false;
   try { openedThisSession = sessionStorage.getItem("vh-opened") === "1"; } catch (e) {}
+  var smallScreen = window.matchMedia("(max-width: 640px)").matches;
   setTimeout(function () {
     if (!panel) return;
-    if (!openedThisSession) {
+    if (!openedThisSession && !smallScreen) {
       try { sessionStorage.setItem("vh-opened", "1"); } catch (e) {}
       openAssistant();
     } else {
