@@ -3,237 +3,615 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Vitality — a modern health and wellness platform with practical tips, tools, and guidance for a healthier life." />
-  <title>Vitality — Health &amp; Wellness</title>
+  <meta name="description" content="Vitality Health — evidence-based wellness resources, healthy habit trackers, and practical guides to help you live well." />
+  <title>Vitality Health — Live Well, Every Day</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8C%BF%3C/text%3E%3C/svg%3E" />
+  <script>
+    // Apply saved/system theme + view mode before paint to avoid flashes.
+    (function () {
+      try {
+        var saved = localStorage.getItem("vh-theme");
+        var dark = saved ? saved === "dark"
+          : window.matchMedia("(prefers-color-scheme: dark)").matches;
+        document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
+      } catch (e) {}
+      try {
+        // Simple view is the default: everyday visitors see a calmer page.
+        var view = localStorage.getItem("vh-view") || "simple";
+        document.documentElement.setAttribute("data-view", view);
+      } catch (e) {}
+    })();
+  </script>
 </head>
 <body>
   <header class="site-header" id="top">
-    <nav class="nav container">
-      <a class="brand" href="#top">
+    <nav class="nav container" aria-label="Primary">
+      <a href="#top" class="brand" aria-label="Vitality Health home">
         <span class="brand-mark" aria-hidden="true">🌿</span>
-        <span>Vitality</span>
+        <span class="brand-name">Vitality<strong>Health</strong></span>
       </a>
-      <button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
+      <button class="nav-toggle" aria-expanded="false" aria-controls="nav-menu" aria-label="Toggle menu">
         <span></span><span></span><span></span>
       </button>
-      <ul class="nav-links">
+      <ul class="nav-menu" id="nav-menu">
         <li><a href="#pillars">Pillars</a></li>
-        <li><a href="#tools">Tools</a></li>
-        <li><a href="#tips">Daily Tips</a></li>
-        <li><a href="#articles">Articles</a></li>
-        <li><a class="nav-cta" href="#tools">Get Started</a></li>
+        <li><a href="#tracker">Habits</a></li>
+        <li><a href="#water">Water</a></li>
+        <li class="nav-adv"><a href="#workout">Workouts</a></li>
+        <li><a href="#journal">Journal</a></li>
+        <li><a href="#trends">Trends</a></li>
+        <li><a href="#bmi">BMI</a></li>
+        <li>
+          <button class="wunit-toggle" id="wunit-toggle" type="button" aria-label="Switch weight units between kilograms and pounds" title="Switch weight units">kg</button>
+        </li>
+        <li>
+          <button class="view-toggle" id="view-toggle" type="button">Full view</button>
+        </li>
+        <li>
+          <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Toggle dark mode" title="Toggle dark mode">
+            <span class="theme-icon" aria-hidden="true">🌙</span>
+          </button>
+        </li>
+        <li><a href="#newsletter" class="btn btn-small">Get Tips</a></li>
       </ul>
     </nav>
   </header>
 
   <main>
-    <!-- HERO -->
+    <!-- Hero -->
     <section class="hero">
       <div class="container hero-inner">
         <div class="hero-copy">
-          <p class="eyebrow">Feel better, every day</p>
-          <h1>Small habits.<br /><em>Big</em> health.</h1>
+          <p class="eyebrow">Evidence-based wellness</p>
+          <h1>Small daily habits.<br />A healthier life.</h1>
           <p class="lead">
-            Vitality brings movement, nutrition, sleep, and mindfulness into one
-            calm place — with practical tools and science-backed guidance you can
-            actually stick with.
+            Vitality Health brings together practical, science-backed guidance on movement,
+            nutrition, sleep, and mind — so you can build routines that actually last.
           </p>
           <div class="hero-actions">
-            <a class="btn btn-primary" href="#tools">Try the tools</a>
-            <a class="btn btn-ghost" href="#pillars">Explore pillars</a>
+            <a href="#tracker" class="btn">Start tracking habits</a>
+            <a href="#pillars" class="btn btn-ghost">Explore the pillars</a>
           </div>
-          <dl class="hero-stats">
-            <div><dt>4</dt><dd>wellness pillars</dd></div>
-            <div><dt>10 min</dt><dd>a day is enough</dd></div>
-            <div><dt>100%</dt><dd>free &amp; private</dd></div>
-          </dl>
-        </div>
-        <div class="hero-card" aria-hidden="true">
-          <div class="pulse-ring"></div>
-          <div class="hero-metric">
-            <span class="hero-metric-label">Resting heart rate</span>
-            <span class="hero-metric-value">64<small>bpm</small></span>
-            <div class="spark">
-              <span></span><span></span><span></span><span></span>
-              <span></span><span></span><span></span><span></span>
-            </div>
-          </div>
-          <ul class="hero-badges">
-            <li>💧 6 / 8 glasses</li>
-            <li>🚶 7,240 steps</li>
-            <li>😴 7h 42m sleep</li>
+          <ul class="hero-stats">
+            <li><strong>4</strong><span>Wellness pillars</span></li>
+            <li><strong>12+</strong><span>Guided articles</span></li>
+            <li><strong>100%</strong><span>Free resources</span></li>
           </ul>
         </div>
+        <div class="hero-art" aria-hidden="true">
+          <div class="orb orb-1"></div>
+          <div class="orb orb-2"></div>
+          <div class="pulse-card">
+            <span class="pulse-emoji">❤️</span>
+            <div>
+              <p class="pulse-label">Resting heart rate</p>
+              <p class="pulse-value">62 <small>bpm</small></p>
+            </div>
+          </div>
+          <div class="steps-card">
+            <span class="pulse-emoji">👟</span>
+            <div>
+              <p class="pulse-label">Today's steps</p>
+              <p class="pulse-value">8,420</p>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
 
-    <!-- PILLARS -->
+    <!-- Disclaimer banner -->
+    <div class="disclaimer container" role="note">
+      <strong>Note:</strong> This site is for general education only and is not medical advice.
+      Always consult a qualified healthcare professional for personal guidance.
+    </div>
+
+    <!-- Persona / level selector -->
+    <section id="persona" class="persona-band">
+      <div class="container">
+        <div class="section-head">
+          <h2>Health is for every body</h2>
+          <p>Whether you're taking your first steps or chasing a new PR, tell us where you are — we'll tailor the workouts and Vita's coaching to you. Change it anytime.</p>
+        </div>
+        <div class="persona-grid" id="persona-grid" role="group" aria-label="Choose your level">
+          <button class="persona-card" data-level="starter" type="button" aria-pressed="false">
+            <span class="persona-emoji" aria-hidden="true">🌱</span>
+            <span class="persona-title">Just starting</span>
+            <span class="persona-desc">New to caring for your health — gentle, simple, no pressure.</span>
+          </button>
+          <button class="persona-card" data-level="fit" type="button" aria-pressed="false">
+            <span class="persona-emoji" aria-hidden="true">🚶</span>
+            <span class="persona-title">Keeping fit</span>
+            <span class="persona-desc">Active and building consistent, balanced everyday habits.</span>
+          </button>
+          <button class="persona-card" data-level="athlete" type="button" aria-pressed="false">
+            <span class="persona-emoji" aria-hidden="true">🏆</span>
+            <span class="persona-title">Athlete / bodybuilder</span>
+            <span class="persona-desc">Training hard — macros, progressive overload, and recovery.</span>
+          </button>
+        </div>
+        <p class="persona-note" id="persona-note" role="status"></p>
+      </div>
+    </section>
+
+    <!-- Pillars -->
     <section id="pillars" class="section">
       <div class="container">
-        <header class="section-head">
-          <p class="eyebrow">The four pillars</p>
-          <h2>Health that fits your whole life</h2>
-          <p class="section-sub">Balance across these areas matters more than perfection in any one.</p>
-        </header>
-        <div class="grid pillars">
+        <div class="section-head">
+          <h2>The four pillars of wellbeing</h2>
+          <p>Health isn't one thing — it's the balance of these everyday foundations.</p>
+        </div>
+        <div class="grid pillars-grid">
           <article class="card pillar">
-            <span class="pillar-icon">🏃</span>
+            <span class="pillar-icon" aria-hidden="true">🏃</span>
             <h3>Movement</h3>
-            <p>Consistent, joyful activity — from brisk walks to strength work — keeps your body and mind resilient.</p>
+            <p>Aim for 150 minutes of moderate activity a week. Walking counts — consistency beats intensity.</p>
           </article>
           <article class="card pillar">
-            <span class="pillar-icon">🥗</span>
+            <span class="pillar-icon" aria-hidden="true">🥗</span>
             <h3>Nutrition</h3>
-            <p>Whole foods, colorful plates, and mindful portions. No fads — just steady, nourishing choices.</p>
+            <p>Fill half your plate with vegetables and fruit, choose whole grains, and stay hydrated.</p>
           </article>
           <article class="card pillar">
-            <span class="pillar-icon">😴</span>
+            <span class="pillar-icon" aria-hidden="true">😴</span>
             <h3>Sleep</h3>
-            <p>Quality rest is the foundation of recovery, mood, and focus. Protect your 7–9 hours.</p>
+            <p>Adults need 7–9 hours. A steady schedule and a dark, cool room make the biggest difference.</p>
           </article>
           <article class="card pillar">
-            <span class="pillar-icon">🧘</span>
-            <h3>Mindfulness</h3>
-            <p>A few calm breaths a day lowers stress and builds the awareness that drives every other habit.</p>
+            <span class="pillar-icon" aria-hidden="true">🧘</span>
+            <h3>Mind</h3>
+            <p>Manage stress with breathing, connection, and time outdoors. Mental health is health.</p>
           </article>
         </div>
       </div>
     </section>
 
-    <!-- TOOLS -->
-    <section id="tools" class="section section-alt">
+    <!-- Habit Tracker -->
+    <section id="tracker" class="section section-alt">
       <div class="container">
-        <header class="section-head">
-          <p class="eyebrow">Interactive tools</p>
-          <h2>Quick checks, real insight</h2>
-          <p class="section-sub">Private by design — nothing you enter ever leaves your device.</p>
-        </header>
-
-        <div class="grid tools">
-          <!-- BMI -->
-          <article class="card tool">
-            <h3>BMI calculator</h3>
-            <p class="tool-desc">Estimate your body mass index from height and weight.</p>
-            <form id="bmi-form" class="tool-form">
-              <div class="field-row">
-                <label>Height (cm)
-                  <input type="number" id="bmi-height" min="50" max="260" step="0.1" placeholder="170" required />
-                </label>
-                <label>Weight (kg)
-                  <input type="number" id="bmi-weight" min="20" max="400" step="0.1" placeholder="68" required />
-                </label>
-              </div>
-              <button class="btn btn-primary" type="submit">Calculate</button>
-            </form>
-            <output id="bmi-result" class="tool-result" aria-live="polite"></output>
-          </article>
-
-          <!-- WATER -->
-          <article class="card tool">
-            <h3>Daily water goal</h3>
-            <p class="tool-desc">A simple starting target based on your body weight.</p>
-            <form id="water-form" class="tool-form">
-              <label>Weight (kg)
-                <input type="number" id="water-weight" min="20" max="400" step="0.1" placeholder="68" required />
-              </label>
-              <label>Activity level
-                <select id="water-activity">
-                  <option value="1">Light — mostly resting</option>
-                  <option value="1.1" selected>Moderate — some exercise</option>
-                  <option value="1.2">Active — daily workouts</option>
-                </select>
-              </label>
-              <button class="btn btn-primary" type="submit">Calculate</button>
-            </form>
-            <output id="water-result" class="tool-result" aria-live="polite"></output>
-          </article>
-
-          <!-- BREATHING -->
-          <article class="card tool tool-breathe">
-            <h3>Box breathing</h3>
-            <p class="tool-desc">Follow the circle: inhale, hold, exhale, hold — 4 seconds each.</p>
-            <div class="breathe-stage">
-              <div class="breathe-circle" id="breathe-circle">
-                <span id="breathe-text">Ready</span>
-              </div>
+        <div class="section-head">
+          <h2>Daily habit tracker</h2>
+          <p>Check off today's healthy habits. Your progress is saved right in this browser.</p>
+        </div>
+        <div class="tracker">
+          <ul class="habit-list" id="habit-list">
+            <li><label><input type="checkbox" data-habit="water" /> Drink 8 glasses of water</label></li>
+            <li><label><input type="checkbox" data-habit="move" /> Move for 30 minutes</label></li>
+            <li><label><input type="checkbox" data-habit="veg" /> Eat 5 servings of fruit &amp; veg</label></li>
+            <li><label><input type="checkbox" data-habit="sleep" /> Sleep 7+ hours</label></li>
+            <li><label><input type="checkbox" data-habit="mind" /> 10 minutes of mindfulness</label></li>
+            <li><label><input type="checkbox" data-habit="screen" /> Screen-free hour before bed</label></li>
+          </ul>
+          <div class="tracker-progress">
+            <div class="progress-ring" id="progress-ring" style="--pct:0">
+              <span id="progress-text">0%</span>
             </div>
-            <button class="btn btn-primary" id="breathe-toggle" type="button">Begin</button>
-          </article>
+            <p id="progress-msg">Let's build a great day.</p>
+            <button class="btn btn-ghost btn-small" id="reset-habits" type="button">Reset day</button>
+          </div>
         </div>
       </div>
     </section>
 
-    <!-- DAILY TIPS -->
-    <section id="tips" class="section">
+    <!-- Water Intake Tracker -->
+    <section id="water" class="section">
       <div class="container">
-        <header class="section-head">
-          <p class="eyebrow">Daily tip</p>
-          <h2>One small thing today</h2>
-        </header>
-        <div class="tip-card card">
-          <p id="tip-text" class="tip-text">Loading a tip for you…</p>
-          <button class="btn btn-ghost" id="tip-next" type="button">Another tip →</button>
+        <div class="section-head">
+          <h2>Water intake tracker</h2>
+          <p>Tap a glass to log it. Aim for 8 glasses (about 2 litres) a day — saved for today.</p>
+        </div>
+        <div class="water card">
+          <div class="water-glasses" id="water-glasses" role="group" aria-label="Glasses of water">
+            <!-- glasses injected by script.js -->
+          </div>
+          <div class="water-readout">
+            <p class="water-count"><span id="water-current">0</span> <small>/ <span id="water-goal">8</span> glasses</small></p>
+            <p class="water-litres" id="water-litres">0.0 L logged</p>
+            <div class="water-controls">
+              <button type="button" class="btn btn-ghost btn-small" id="water-minus">– Remove</button>
+              <button type="button" class="btn btn-small" id="water-plus">+ Add glass</button>
+            </div>
+            <p class="water-msg" id="water-msg" role="status"></p>
+          </div>
         </div>
       </div>
     </section>
 
-    <!-- ARTICLES -->
+    <!-- Workout Planner -->
+    <section id="workout" class="section section-alt advanced">
+      <div class="container">
+        <div class="section-head">
+          <h2>Workout planner</h2>
+          <p>Pick a goal, your experience, and how many days you can train. We'll build a weekly split.</p>
+        </div>
+        <form class="workout card" id="workout-form">
+          <div class="workout-fields">
+            <label class="field">
+              <span>Goal</span>
+              <select id="wk-goal">
+                <option value="general">General fitness</option>
+                <option value="strength">Build strength</option>
+                <option value="weight">Lose weight</option>
+                <option value="endurance">Improve endurance</option>
+              </select>
+            </label>
+            <label class="field">
+              <span>Experience</span>
+              <select id="wk-level">
+                <option value="beginner">Beginner</option>
+                <option value="intermediate">Intermediate</option>
+                <option value="advanced">Advanced</option>
+              </select>
+            </label>
+            <label class="field">
+              <span>Days per week</span>
+              <select id="wk-days">
+                <option value="2">2 days</option>
+                <option value="3" selected>3 days</option>
+                <option value="4">4 days</option>
+                <option value="5">5 days</option>
+              </select>
+            </label>
+          </div>
+          <button type="submit" class="btn">Build my plan</button>
+        </form>
+        <div class="workout-plan" id="workout-plan" hidden>
+          <div class="plan-head">
+            <h3 id="plan-title">Your weekly plan</h3>
+            <p id="plan-note" class="plan-note"></p>
+          </div>
+          <div class="grid plan-grid" id="plan-grid"></div>
+        </div>
+
+        <div class="rm-tool card">
+          <div class="rm-head">
+            <h3>One-rep max estimator</h3>
+            <p>Enter any working set to estimate your 1RM and training percentages (Epley formula). You can also tell Vita <em>"log bench 80kg x 5"</em> to track lifts.</p>
+          </div>
+          <form id="rm-form" class="rm-form">
+            <label class="field">
+              <span>Weight lifted</span>
+              <input type="number" id="rm-weight" min="1" step="any" inputmode="decimal" placeholder="80" />
+            </label>
+            <label class="field">
+              <span>Reps (1–12)</span>
+              <input type="number" id="rm-reps" min="1" max="12" inputmode="numeric" placeholder="5" />
+            </label>
+            <label class="field">
+              <span>Unit</span>
+              <select id="rm-unit"><option value="kg">kg</option><option value="lb">lb</option></select>
+            </label>
+            <button class="btn" type="submit">Estimate</button>
+          </form>
+          <div id="rm-result" class="rm-result" hidden>
+            <p class="rm-value"><span id="rm-max">–</span></p>
+            <p class="rm-note">estimated one-rep max</p>
+            <div class="rm-percents" id="rm-percents"></div>
+            <p class="macro-note">Estimates guide training weights — never max out alone or with cold muscles.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Beginner workouts -->
+    <section id="beginner" class="section">
+      <div class="container">
+        <div class="section-head">
+          <h2>New to exercise? Start here</h2>
+          <p>No gym, no equipment, no experience needed. These moves are gentle, safe, and build the habit. Go at your own pace.</p>
+        </div>
+
+        <div class="starter card">
+          <div class="starter-copy">
+            <span class="starter-badge">15-minute starter routine</span>
+            <h3>Your first full-body workout</h3>
+            <p>Do this circuit <strong>2–3 times a week</strong>. Complete one round of each move, rest a minute, then repeat 2–3 rounds. Move slowly and breathe.</p>
+            <ol class="starter-steps">
+              <li>March in place — <span>1 min warm-up</span></li>
+              <li>Chair sit-to-stands — <span>10 reps</span></li>
+              <li>Wall or knee push-ups — <span>8 reps</span></li>
+              <li>Glute bridges — <span>10 reps</span></li>
+              <li>Bird-dog — <span>6 each side</span></li>
+              <li>Knee plank — <span>hold 20 sec</span></li>
+              <li>Calf raises — <span>12 reps</span></li>
+            </ol>
+            <a href="#workout" class="btn btn-small" id="beginner-more">Ready for more? Build a plan →</a>
+          </div>
+          <div class="starter-tips">
+            <h4>First-timer tips</h4>
+            <ul>
+              <li>🔥 <strong>Warm up</strong> for a couple of minutes first.</li>
+              <li>🐢 <strong>Start light.</strong> Fewer reps done well beats many done poorly.</li>
+              <li>💧 <strong>Rest &amp; hydrate</strong> between rounds.</li>
+              <li>🛑 <strong>Stop if it hurts</strong> (a normal "working" burn is fine; sharp pain is not).</li>
+              <li>📅 <strong>Rest days count</strong> — muscles grow while you recover.</li>
+            </ul>
+          </div>
+        </div>
+
+        <h3 class="moves-title">The moves, explained</h3>
+        <div class="grid moves-grid" id="moves-grid"><!-- exercise cards injected by script.js --></div>
+
+        <div class="advanced-teaser card">
+          <p><strong>Want the power tools?</strong> The workout planner, fuel calculator, and one-rep max estimator live in Full view — one tap away whenever you're ready.</p>
+          <button class="btn btn-small" id="teaser-full" type="button">Switch to Full view</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- BMI Calculator -->
+    <section id="bmi" class="section">
+      <div class="container">
+        <div class="section-head">
+          <h2>BMI calculator</h2>
+          <p>A quick estimate of body mass index. It's a screening tool, not a diagnosis.</p>
+        </div>
+        <form class="bmi-tool card" id="bmi-form" novalidate>
+          <div class="unit-toggle" role="group" aria-label="Units">
+            <button type="button" class="unit-btn active" data-unit="metric">Metric</button>
+            <button type="button" class="unit-btn" data-unit="imperial">Imperial</button>
+          </div>
+          <div class="bmi-fields">
+            <label class="field">
+              <span id="height-label">Height (cm)</span>
+              <input type="number" id="height" min="1" step="any" inputmode="decimal" placeholder="170" />
+            </label>
+            <label class="field">
+              <span id="weight-label">Weight (kg)</span>
+              <input type="number" id="weight" min="1" step="any" inputmode="decimal" placeholder="68" />
+            </label>
+          </div>
+          <button type="submit" class="btn">Calculate BMI</button>
+          <div class="bmi-result" id="bmi-result" hidden>
+            <p class="bmi-number"><span id="bmi-value">–</span></p>
+            <p class="bmi-category" id="bmi-category"></p>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- Fuel / macro calculator -->
+    <section id="nutrition" class="section section-alt advanced">
+      <div class="container">
+        <div class="section-head">
+          <h2>Fuel calculator</h2>
+          <p>Estimate your daily calories and protein target — whether you're cutting, maintaining, or building muscle. Uses the Mifflin-St Jeor equation.</p>
+        </div>
+        <form class="macro-tool card" id="macro-form">
+          <div class="unit-toggle" role="group" aria-label="Units">
+            <button type="button" class="munit-btn active" data-unit="metric">Metric</button>
+            <button type="button" class="munit-btn" data-unit="imperial">Imperial</button>
+          </div>
+          <div class="macro-fields">
+            <label class="field">
+              <span>Age</span>
+              <input type="number" id="m-age" min="12" max="100" inputmode="numeric" placeholder="30" />
+            </label>
+            <label class="field">
+              <span>Sex</span>
+              <select id="m-sex">
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+              </select>
+            </label>
+            <label class="field">
+              <span id="m-height-label">Height (cm)</span>
+              <input type="number" id="m-height" min="1" step="any" inputmode="decimal" placeholder="175" />
+            </label>
+            <label class="field">
+              <span id="m-weight-label">Weight (kg)</span>
+              <input type="number" id="m-weight" min="1" step="any" inputmode="decimal" placeholder="75" />
+            </label>
+            <label class="field">
+              <span>Activity</span>
+              <select id="m-activity">
+                <option value="1.2">Sedentary (desk job)</option>
+                <option value="1.375">Light (1–3 workouts/wk)</option>
+                <option value="1.55" selected>Moderate (3–5 workouts/wk)</option>
+                <option value="1.725">Active (6–7 workouts/wk)</option>
+                <option value="1.9">Athlete (2×/day)</option>
+              </select>
+            </label>
+            <label class="field">
+              <span>Goal</span>
+              <select id="m-goal">
+                <option value="cut">Lose fat (cut)</option>
+                <option value="maintain" selected>Maintain</option>
+                <option value="bulk">Build muscle (bulk)</option>
+              </select>
+            </label>
+          </div>
+          <button type="submit" class="btn">Calculate my fuel</button>
+          <div class="macro-result" id="macro-result" hidden>
+            <div class="macro-cal">
+              <span class="macro-cal-value" id="m-calories">–</span>
+              <span class="macro-cal-label">calories / day</span>
+            </div>
+            <div class="macro-tiles">
+              <div class="macro-tile macro-p"><span id="m-protein">–</span><small>Protein</small></div>
+              <div class="macro-tile macro-c"><span id="m-carbs">–</span><small>Carbs</small></div>
+              <div class="macro-tile macro-f"><span id="m-fat">–</span><small>Fat</small></div>
+            </div>
+            <p class="macro-note" id="m-note"></p>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- Health Journal (populated by Vita, the AI assistant) -->
+    <section id="journal" class="section section-alt">
+      <div class="container">
+        <div class="section-head">
+          <h2>Your health journal</h2>
+          <p>Everything you log with <strong>Vita</strong>, your assistant, is tracked here — private to this browser. Tap the 💬 button to chat.</p>
+        </div>
+        <div class="journal-stats" id="journal-stats"><!-- snapshot tiles injected by script.js --></div>
+        <div class="journal-cols">
+          <div class="card journal-panel">
+            <div class="journal-panel-head">
+              <h3>Recent entries</h3>
+              <span>
+                <button type="button" class="link-btn" id="journal-export">Export CSV</button>
+                <button type="button" class="link-btn" id="journal-clear">Clear</button>
+              </span>
+            </div>
+            <ul class="journal-list" id="journal-list">
+              <li class="journal-empty">No entries yet. Open Vita (💬) and try <em>"log weight 70kg"</em>.</li>
+            </ul>
+          </div>
+          <div class="card journal-panel">
+            <div class="journal-panel-head">
+              <h3>Reminders</h3>
+              <button type="button" class="link-btn" id="reminders-clear">Clear</button>
+            </div>
+            <ul class="reminder-list" id="reminder-list">
+              <li class="journal-empty">No reminders yet. Try <em>"remind me to stretch in 30 minutes"</em>.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Trends (charts of journal data over time) -->
+    <section id="trends" class="section">
+      <div class="container">
+        <div class="section-head">
+          <h2>Your trends over time</h2>
+          <p>See how your habits move week to week. Charts are built from your journal — private to this browser.</p>
+        </div>
+        <div class="trends-controls">
+          <div class="range-toggle" id="range-toggle" role="group" aria-label="Time range">
+            <button type="button" class="range-btn active" data-days="7">7 days</button>
+            <button type="button" class="range-btn" data-days="14">14 days</button>
+            <button type="button" class="range-btn" data-days="30">30 days</button>
+          </div>
+          <button type="button" class="btn btn-ghost btn-small" id="sample-data">Try sample data</button>
+        </div>
+        <div class="trends-empty card" id="trends-empty" hidden>
+          <p>📊 No journal data yet. Log a few days with <strong>Vita</strong> (💬) — or tap <em>"Try sample data"</em> to preview how your trends will look.</p>
+        </div>
+        <div class="grid trends-grid" id="trends-grid"><!-- chart cards injected by script.js --></div>
+      </div>
+    </section>
+
+    <!-- Articles -->
     <section id="articles" class="section section-alt">
       <div class="container">
-        <header class="section-head">
-          <p class="eyebrow">From the journal</p>
-          <h2>Read, learn, thrive</h2>
-        </header>
-        <div class="grid articles">
+        <div class="section-head">
+          <h2>Latest from the blog</h2>
+          <p>Bite-sized, practical reads you can act on today.</p>
+        </div>
+        <div class="grid articles-grid">
           <article class="card article">
             <div class="article-tag">Nutrition</div>
-            <h3>The plate method, simplified</h3>
-            <p>Fill half your plate with vegetables, a quarter with protein, a quarter with whole grains. That's it.</p>
-            <span class="article-meta">5 min read</span>
-          </article>
-          <article class="card article">
-            <div class="article-tag">Sleep</div>
-            <h3>Winding down the smart way</h3>
-            <p>A consistent bedtime and a screen-free hour before sleep can transform how rested you feel.</p>
-            <span class="article-meta">4 min read</span>
+            <h3>The simple plate method</h3>
+            <p>Skip the calorie math. Learn how to build balanced meals using nothing but your plate.</p>
+            <span class="read-more">5 min read →</span>
           </article>
           <article class="card article">
             <div class="article-tag">Movement</div>
-            <h3>Why walking wins</h3>
-            <p>The most underrated exercise is also the most accessible. Aim for a daily walk you enjoy.</p>
-            <span class="article-meta">6 min read</span>
+            <h3>Why walking is underrated</h3>
+            <p>The most accessible exercise on earth does more for your body and mind than you'd think.</p>
+            <span class="read-more">4 min read →</span>
+          </article>
+          <article class="card article">
+            <div class="article-tag">Sleep</div>
+            <h3>Build a wind-down routine</h3>
+            <p>A repeatable evening ritual that signals your body it's time to rest — and stick to it.</p>
+            <span class="read-more">6 min read →</span>
+          </article>
+          <article class="card article">
+            <div class="article-tag">Mind</div>
+            <h3>2-minute breathing resets</h3>
+            <p>Box breathing and physiological sighs you can do anywhere to calm your nervous system fast.</p>
+            <span class="read-more">3 min read →</span>
+          </article>
+          <article class="card article">
+            <div class="article-tag">Hydration</div>
+            <h3>How much water do you really need?</h3>
+            <p>Forget rigid rules. Here's how to read your own body's signals and stay properly hydrated.</p>
+            <span class="read-more">4 min read →</span>
+          </article>
+          <article class="card article">
+            <div class="article-tag">Strength</div>
+            <h3>Strength training after 40</h3>
+            <p>It's never too late to start. A gentle, progressive approach to building muscle safely.</p>
+            <span class="read-more">7 min read →</span>
           </article>
         </div>
       </div>
     </section>
 
-    <!-- CTA -->
-    <section class="cta">
-      <div class="container cta-inner">
-        <h2>Your healthiest year starts with one habit.</h2>
-        <p>Pick a single pillar, use a tool, and come back tomorrow. Momentum does the rest.</p>
-        <a class="btn btn-light" href="#tools">Start now</a>
+    <!-- Newsletter -->
+    <section id="newsletter" class="section newsletter">
+      <div class="container newsletter-inner card">
+        <div>
+          <h2>Weekly wellness tips</h2>
+          <p>One short, useful email each week. No spam, unsubscribe anytime.</p>
+        </div>
+        <form class="newsletter-form" id="newsletter-form" novalidate>
+          <label class="sr-only" for="email">Email address</label>
+          <input type="email" id="email" placeholder="you@example.com" required />
+          <button type="submit" class="btn">Subscribe</button>
+          <p class="form-msg" id="newsletter-msg" role="status"></p>
+        </form>
       </div>
     </section>
   </main>
+
+  <!-- Vita — AI health assistant -->
+  <div class="assistant" id="assistant">
+    <div class="assistant-greeting" id="assistant-greeting" hidden>
+      <button class="greeting-close" id="greeting-close" type="button" aria-label="Dismiss">✕</button>
+      <p id="greeting-text"></p>
+    </div>
+    <button class="assistant-launch" id="assistant-launch" aria-label="Open Vita, your health assistant" aria-expanded="false">
+      <span class="assistant-launch-icon" aria-hidden="true">💬</span>
+    </button>
+    <div class="assistant-panel" id="assistant-panel" role="dialog" aria-label="Vita health assistant" hidden>
+      <header class="assistant-head">
+        <div class="assistant-id">
+          <span class="assistant-avatar" aria-hidden="true">🌿</span>
+          <div>
+            <p class="assistant-name">Vita</p>
+            <p class="assistant-role" id="assistant-role">Your health companion</p>
+          </div>
+        </div>
+        <div class="assistant-head-actions">
+          <button class="assistant-icon-btn" id="assistant-voice" type="button" aria-label="Turn Vita's voice on" aria-pressed="false" title="Voice on/off">🔈</button>
+          <button class="assistant-icon-btn" id="assistant-close" type="button" aria-label="Close assistant">✕</button>
+        </div>
+      </header>
+      <div class="assistant-log" id="assistant-log" role="log" aria-live="polite"></div>
+      <div class="assistant-chips" id="assistant-chips" aria-label="Quick actions"></div>
+      <form class="assistant-input" id="assistant-form" autocomplete="off">
+        <label class="sr-only" for="assistant-text">Message Vita</label>
+        <button type="button" class="assistant-mic" id="assistant-mic" aria-label="Speak to Vita" title="Voice input" hidden>🎤</button>
+        <input id="assistant-text" placeholder='Try: "log weight 70kg"' />
+        <button type="submit" aria-label="Send message">➤</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Reminder/notification toasts -->
+  <div class="toast-stack" id="toast-stack" aria-live="assertive"></div>
 
   <footer class="site-footer">
     <div class="container footer-inner">
       <div class="footer-brand">
         <span class="brand-mark" aria-hidden="true">🌿</span>
-        <span>Vitality</span>
+        <span class="brand-name">Vitality<strong>Health</strong></span>
+        <p>Practical, evidence-based wellness for everyday life.</p>
       </div>
-      <p class="footer-note">
-        Vitality is for general education and wellness. It is not medical advice.
-        Always consult a qualified healthcare professional about your health.
-      </p>
-      <p class="footer-copy">© <span id="year"></span> Vitality. Built with care.</p>
+      <nav class="footer-links" aria-label="Footer">
+        <a href="#pillars">Pillars</a>
+        <a href="#tracker">Habit Tracker</a>
+        <a href="#bmi">BMI Tool</a>
+        <a href="#articles">Articles</a>
+      </nav>
     </div>
+    <p class="copyright">© <span id="year"></span> Vitality Health. For educational purposes only — not medical advice.</p>
   </footer>
 
   <script src="script.js"></script>
