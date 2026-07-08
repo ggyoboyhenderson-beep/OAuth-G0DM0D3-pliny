@@ -272,6 +272,13 @@
     if (waterPlus) waterPlus.addEventListener("click", function () { setWater(waterCount + 1); });
     if (waterMinus) waterMinus.addEventListener("click", function () { setWater(waterCount - 1); });
   }
+  // Expose a hook so the assistant can log water into this tracker.
+  window.VitalityHealth = window.VitalityHealth || {};
+  window.VitalityHealth.addWater = function (n) {
+    if (!waterWrap) return 0;
+    setWater(waterCount + (n || 1));
+    return waterCount;
+  };
 
   /* ===== Workout planner ===== */
   var workoutForm = document.getElementById("workout-form");
@@ -394,6 +401,462 @@
       renderPlan(buildPlan(goal, level, days), goal);
     });
   }
+
+  /* =====================================================================
+     Vita — AI health assistant + health journal + reminders
+     A privacy-first, rule-based companion. All data stays in localStorage.
+     ===================================================================== */
+  var J_KEY = "vh-journal";
+  var R_KEY = "vh-reminders";
+  var C_KEY = "vh-chat";
+
+  function uid() {
+    return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  }
+  function readStore(key) {
+    try { return JSON.parse(localStorage.getItem(key) || "[]"); } catch (e) { return []; }
+  }
+  function writeStore(key, val) {
+    try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) {}
+  }
+  function isToday(ts) {
+    return new Date(ts).toISOString().slice(0, 10) === todayKey();
+  }
+  function timeLabel(ts) {
+    var d = new Date(ts);
+    return d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  }
+
+  var journal = readStore(J_KEY);
+  var reminders = readStore(R_KEY);
+
+  /* ---------- Journal rendering ---------- */
+  var journalStats = document.getElementById("journal-stats");
+  var journalList = document.getElementById("journal-list");
+  var reminderList = document.getElementById("reminder-list");
+
+  function todaysEntries() {
+    return journal.filter(function (e) { return isToday(e.ts); });
+  }
+
+  function snapshot() {
+    var t = todaysEntries();
+    function latest(type) {
+      for (var i = t.length - 1; i >= 0; i--) if (t[i].type === type) return t[i];
+      return null;
+    }
+    var weight = latest("weight");
+    var sleep = latest("sleep");
+    var steps = latest("steps");
+    var mood = latest("mood");
+    var water = t.filter(function (e) { return e.type === "water"; })
+      .reduce(function (s, e) { return s + (e.value || 1); }, 0);
+    var workouts = t.filter(function (e) { return e.type === "workout"; }).length;
+    return { weight: weight, sleep: sleep, steps: steps, mood: mood, water: water, workouts: workouts };
+  }
+
+  function renderStats() {
+    if (!journalStats) return;
+    var s = snapshot();
+    var tiles = [
+      { emoji: "⚖️", label: "Weight", value: s.weight ? s.weight.value + " <small>" + s.weight.unit + "</small>" : "—" },
+      { emoji: "💧", label: "Water", value: s.water + " <small>glasses</small>" },
+      { emoji: "😴", label: "Sleep", value: s.sleep ? s.sleep.value + " <small>h</small>" : "—" },
+      { emoji: "👟", label: "Steps", value: s.steps ? Number(s.steps.value).toLocaleString() : "—" },
+      { emoji: s.mood ? s.mood.emoji : "🙂", label: "Mood", value: s.mood ? '<small style="font-size:.8rem">' + s.mood.value + "</small>" : "—" },
+      { emoji: "🏋️", label: "Workouts", value: String(s.workouts) },
+    ];
+    journalStats.innerHTML = tiles.map(function (t) {
+      return '<div class="stat-tile"><span class="stat-emoji">' + t.emoji +
+        '</span><span class="stat-value">' + t.value +
+        '</span><span class="stat-label">' + t.label + "</span></div>";
+    }).join("");
+  }
+
+  function renderJournalList() {
+    if (!journalList) return;
+    if (!journal.length) {
+      journalList.innerHTML = '<li class="journal-empty">No entries yet. Open Vita (💬) and try <em>"log weight 70kg"</em>.</li>';
+      return;
+    }
+    var recent = journal.slice(-8).reverse();
+    journalList.innerHTML = recent.map(function (e) {
+      return '<li><span class="j-emoji">' + e.emoji + '</span><span class="j-text">' +
+        escapeHtml(e.text) + '</span><span class="j-time">' + timeLabel(e.ts) + "</span></li>";
+    }).join("");
+  }
+
+  function renderReminderList() {
+    if (!reminderList) return;
+    var active = reminders.slice().sort(function (a, b) { return a.at - b.at; });
+    if (!active.length) {
+      reminderList.innerHTML = '<li class="journal-empty">No reminders yet. Try <em>"remind me to stretch in 30 minutes"</em>.</li>';
+      return;
+    }
+    reminderList.innerHTML = active.map(function (r) {
+      var when = r.fired ? "done" : timeLabel(r.at) + (isToday(r.at) ? "" : ", " + new Date(r.at).toLocaleDateString([], { month: "short", day: "numeric" }));
+      return '<li class="' + (r.fired ? "fired" : "") + '"><span class="r-main">⏰ <span>' +
+        escapeHtml(r.text) + '</span></span><span class="r-time">' + when +
+        '</span><button class="r-cancel" data-id="' + r.id + '" aria-label="Cancel reminder">✕</button></li>';
+    }).join("");
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+
+  function renderAll() {
+    renderStats();
+    renderJournalList();
+    renderReminderList();
+  }
+
+  function addEntry(type, emoji, text, value, unit) {
+    journal.push({ id: uid(), ts: Date.now(), type: type, emoji: emoji, text: text, value: value, unit: unit });
+    if (journal.length > 200) journal = journal.slice(-200);
+    writeStore(J_KEY, journal);
+    renderAll();
+  }
+
+  if (reminderList) {
+    reminderList.addEventListener("click", function (e) {
+      var btn = e.target.closest(".r-cancel");
+      if (!btn) return;
+      var id = btn.dataset.id;
+      reminders = reminders.filter(function (r) { return r.id !== id; });
+      writeStore(R_KEY, reminders);
+      renderReminderList();
+    });
+  }
+
+  var journalClear = document.getElementById("journal-clear");
+  if (journalClear) journalClear.addEventListener("click", function () {
+    journal = [];
+    writeStore(J_KEY, journal);
+    renderAll();
+  });
+  var remindersClear = document.getElementById("reminders-clear");
+  if (remindersClear) remindersClear.addEventListener("click", function () {
+    reminders = [];
+    writeStore(R_KEY, reminders);
+    renderReminderList();
+  });
+
+  /* ---------- Toasts + notifications ---------- */
+  var toastStack = document.getElementById("toast-stack");
+  function showToast(emoji, title, body, ms) {
+    if (!toastStack) return;
+    var el = document.createElement("div");
+    el.className = "toast";
+    el.innerHTML = '<span class="toast-emoji">' + emoji + "</span><div><strong>" +
+      escapeHtml(title) + "</strong><span>" + escapeHtml(body) + "</span></div>";
+    toastStack.appendChild(el);
+    setTimeout(function () {
+      el.style.transition = "opacity .3s, transform .3s";
+      el.style.opacity = "0";
+      el.style.transform = "translateX(-20px)";
+      setTimeout(function () { el.remove(); }, 320);
+    }, ms || 7000);
+  }
+
+  /* ---------- Reminder scheduling ---------- */
+  var timers = {};
+  function fireReminder(r) {
+    if (r.fired) return;
+    r.fired = true;
+    writeStore(R_KEY, reminders);
+    renderReminderList();
+    showToast("⏰", "Reminder", r.text);
+    if ("Notification" in window && Notification.permission === "granted") {
+      try { new Notification("🌿 Vita reminder", { body: r.text }); } catch (e) {}
+    }
+    if (assistantOpen) botSay("⏰ Reminder: " + r.text);
+  }
+  function scheduleReminder(r) {
+    if (r.fired) return;
+    var delay = r.at - Date.now();
+    if (delay <= 0) { fireReminder(r); return; }
+    if (timers[r.id]) clearTimeout(timers[r.id]);
+    // setTimeout caps around ~24.8 days; clamp and re-check via the sweep for longer waits.
+    timers[r.id] = setTimeout(function () { fireReminder(r); }, Math.min(delay, 2147483647));
+  }
+  reminders.forEach(scheduleReminder);
+  // Safety sweep: catches due reminders even if a timer was lost.
+  setInterval(function () {
+    var now = Date.now();
+    reminders.forEach(function (r) { if (!r.fired && r.at <= now) fireReminder(r); });
+  }, 20000);
+
+  function addReminder(text, at) {
+    var r = { id: uid(), text: text, at: at, created: Date.now(), fired: false };
+    reminders.push(r);
+    writeStore(R_KEY, reminders);
+    renderReminderList();
+    scheduleReminder(r);
+    if ("Notification" in window && Notification.permission === "default") {
+      Notification.requestPermission().catch(function () {});
+    }
+    return r;
+  }
+
+  /* ---------- Natural-language parsing ---------- */
+  var MOOD_EMOJI = {
+    great: "😄", amazing: "🤩", awesome: "🤩", happy: "😄", good: "🙂", fine: "🙂",
+    ok: "🙂", okay: "🙂", meh: "😐", tired: "😴", exhausted: "😴", sleepy: "😴",
+    stressed: "😣", anxious: "😰", nervous: "😰", sad: "😔", down: "😔", low: "😔",
+    bad: "😔", sick: "🤒", ill: "🤒", angry: "😠", energetic: "⚡", motivated: "💪",
+  };
+  var CRISIS = /\b(chest pain|can'?t breathe|cannot breathe|suicidal|kill myself|end my life|overdose|heart attack|stroke|seizure)\b/i;
+
+  function parseWhen(str) {
+    var m;
+    if ((m = /\bin\s+(\d+(?:\.\d+)?)\s*(sec|secs|second|seconds|min|mins|minute|minutes|hour|hours|hr|hrs|day|days)\b/i.exec(str))) {
+      var n = parseFloat(m[1]);
+      var unit = m[2].toLowerCase();
+      var ms = /sec/.test(unit) ? n * 1000
+        : /min/.test(unit) ? n * 60000
+        : /hour|hr/.test(unit) ? n * 3600000
+        : n * 86400000;
+      return { at: Date.now() + ms, matched: m[0] };
+    }
+    if ((m = /\bat\s+(\d{1,2})(?::(\d{2}))?\s*(am|pm)?\b/i.exec(str))) {
+      var h = parseInt(m[1], 10);
+      var min = m[2] ? parseInt(m[2], 10) : 0;
+      var ap = m[3] ? m[3].toLowerCase() : "";
+      if (ap === "pm" && h < 12) h += 12;
+      if (ap === "am" && h === 12) h = 0;
+      var d = new Date();
+      d.setHours(h, min, 0, 0);
+      if (d.getTime() <= Date.now()) d.setDate(d.getDate() + 1); // roll to tomorrow
+      return { at: d.getTime(), matched: m[0] };
+    }
+    return null;
+  }
+
+  function num(str) {
+    var m = /(\d[\d,]*(?:\.\d+)?)/.exec(str);
+    return m ? parseFloat(m[1].replace(/,/g, "")) : null;
+  }
+
+  function handle(raw) {
+    var text = raw.trim();
+    var low = text.toLowerCase();
+    if (!text) return "Type something like \"log water\" or \"remind me to walk in 1 hour\".";
+
+    if (CRISIS.test(low)) {
+      return "That sounds serious, and I'm only a wellness helper — not a medical service. " +
+        "Please contact your local emergency number or a crisis line right away, or reach out to someone you trust. You deserve real support. 💚";
+    }
+
+    // Help
+    if (/^(help|what can you do|commands|\?)/.test(low)) {
+      return "I can log your health and remind you. Try:\n" +
+        "• \"log weight 70kg\"\n• \"log water\" (or \"drank 2 glasses\")\n" +
+        "• \"slept 7.5 hours\"\n• \"log 8000 steps\"\n• \"feeling great\"\n" +
+        "• \"log workout 30 min run\"\n• \"remind me to stretch in 30 minutes\"\n" +
+        "• \"summary\" for today's recap.";
+    }
+
+    // Greetings / thanks
+    if (/^(hi|hey|hello|yo|hiya|good (morning|afternoon|evening))\b/.test(low))
+      return "Hi! 🌿 I'm Vita. Tell me how you're doing — e.g. \"log water\" or \"slept 8 hours\". Say \"help\" for ideas.";
+    if (/\b(thanks|thank you|cheers|ty)\b/.test(low))
+      return "Anytime! Keep up the great work. 💚";
+
+    // Clear
+    if (/\bclear\b.*\breminder/.test(low) || /\breminder.*\bclear\b/.test(low)) {
+      reminders = []; writeStore(R_KEY, reminders); renderReminderList();
+      return "Cleared all reminders. ⏰";
+    }
+    if (/\b(clear|reset|delete)\b.*\b(log|journal|entries|history)\b/.test(low)) {
+      journal = []; writeStore(J_KEY, journal); renderAll();
+      return "Journal cleared. Fresh start! 🌱";
+    }
+
+    // Reminders
+    if (/\bremind|\breminder\b/.test(low)) {
+      var when = parseWhen(low);
+      if (!when) return "When should I remind you? Try \"in 20 minutes\" or \"at 3pm\", e.g. \"remind me to drink water in 20 minutes\".";
+      var task = text
+        .replace(/\bremind me to\b/i, "")
+        .replace(/\bremind me\b/i, "")
+        .replace(/\breminder to\b/i, "")
+        .replace(/\bremind\b/i, "")
+        .replace(when.matched, "")
+        .replace(/\bto\b\s*$/i, "")
+        .trim();
+      task = task.replace(/^to\s+/i, "").trim() || "check in on your health";
+      addReminder(task, when.at);
+      return "Got it — I'll remind you to " + task + " at " + timeLabel(when.at) +
+        (isToday(when.at) ? "" : " tomorrow") + ". ⏰";
+    }
+
+    // Summary
+    if (/\b(summary|recap|how am i|how'?m i|status|progress|today|report)\b/.test(low)) {
+      var s = snapshot();
+      var parts = [];
+      parts.push("💧 Water: " + s.water + " glass" + (s.water === 1 ? "" : "es"));
+      if (s.weight) parts.push("⚖️ Weight: " + s.weight.value + " " + s.weight.unit);
+      if (s.sleep) parts.push("😴 Sleep: " + s.sleep.value + " h");
+      if (s.steps) parts.push("👟 Steps: " + Number(s.steps.value).toLocaleString());
+      if (s.mood) parts.push(s.mood.emoji + " Mood: " + s.mood.value);
+      if (s.workouts) parts.push("🏋️ Workouts: " + s.workouts);
+      var upcoming = reminders.filter(function (r) { return !r.fired; }).length;
+      if (upcoming) parts.push("⏰ " + upcoming + " reminder" + (upcoming === 1 ? "" : "s") + " pending");
+      return "Here's today so far:\n" + parts.join("\n") +
+        (s.water < 8 ? "\n\nTip: " + (8 - s.water) + " more glass" + (8 - s.water === 1 ? "" : "es") + " to hit your water goal!" : "\n\nGreat hydration today! 💧");
+    }
+
+    // Weight
+    if (/\bweigh|\bweight\b/.test(low)) {
+      var w = num(low);
+      if (w == null) return "How much? Try \"log weight 70kg\".";
+      var unit = /\b(lb|lbs|pound)/.test(low) ? "lb" : "kg";
+      addEntry("weight", "⚖️", "Weight: " + w + " " + unit, w, unit);
+      return "Logged your weight: " + w + " " + unit + ". ⚖️";
+    }
+
+    // Sleep
+    if (/\bslept\b|\bsleep\b/.test(low)) {
+      var h = num(low);
+      if (h == null) return "How many hours did you sleep? Try \"slept 7.5 hours\".";
+      addEntry("sleep", "😴", "Slept " + h + " h", h, "h");
+      var note = h >= 7 ? " Nicely rested! 😴" : h >= 6 ? " Try for a bit more tonight." : " That's short — prioritise rest tonight. 💤";
+      return "Logged " + h + " hours of sleep." + note;
+    }
+
+    // Steps
+    if (/\bsteps?\b/.test(low)) {
+      var st = num(low);
+      if (st == null) return "How many steps? Try \"log 8000 steps\".";
+      addEntry("steps", "👟", Number(st).toLocaleString() + " steps", st, "steps");
+      return "Logged " + Number(st).toLocaleString() + " steps." + (st >= 8000 ? " Crushing it! 👟" : " Keep moving!");
+    }
+
+    // Water
+    if (/\bwater\b|\bhydrate\b|\bdrank\b|glass(?:es)? of water/.test(low)) {
+      var g = num(low) || 1;
+      g = Math.max(1, Math.min(12, Math.round(g)));
+      var total = null;
+      if (window.VitalityHealth && window.VitalityHealth.addWater) total = window.VitalityHealth.addWater(g);
+      addEntry("water", "💧", "Drank " + g + " glass" + (g === 1 ? "" : "es") + " of water", g, "glass");
+      return "Logged " + g + " glass" + (g === 1 ? "" : "es") + " of water. 💧" +
+        (total != null ? " That's " + total + "/8 today." : "");
+    }
+
+    // Mood
+    var moodMatch = /\b(?:feeling|feel|mood(?: is| of)?|i am|i'm)\s+([a-z]+)/.exec(low);
+    if (moodMatch && MOOD_EMOJI[moodMatch[1]]) {
+      var mword = moodMatch[1];
+      addEntry("mood", MOOD_EMOJI[mword], "Feeling " + mword, mword, "");
+      return MOOD_EMOJI[mword] + " Noted that you're feeling " + mword + ". Thanks for checking in.";
+    }
+
+    // Workout
+    if (/\bworkout|worked out|exercis|trained|training|gym|\bran\b|\brun\b|jog|yoga|pilates|cycl|swim|walk(?:ed)?\b/.test(low)) {
+      var mins = null;
+      var mm = /(\d+)\s*(min|mins|minute|minutes)/.exec(low);
+      if (mm) mins = parseInt(mm[1], 10);
+      var kind = /yoga/.test(low) ? "yoga" : /run|ran|jog/.test(low) ? "a run" :
+        /cycl|bike/.test(low) ? "cycling" : /swim/.test(low) ? "swimming" :
+        /walk/.test(low) ? "a walk" : /gym|strength|lift/.test(low) ? "a gym session" : "a workout";
+      var label = "Workout: " + kind + (mins ? " (" + mins + " min)" : "");
+      addEntry("workout", "🏋️", label, mins, "min");
+      return "Nice — logged " + kind + (mins ? " for " + mins + " minutes" : "") + ". 🏋️ Well done!";
+    }
+
+    // Meals
+    if (/\b(ate|eat|eaten|meal|breakfast|lunch|dinner|snack|had)\b/.test(low)) {
+      addEntry("meal", "🍽️", capitalize(text), null, "");
+      return "Logged your meal. 🍽️ Aim for veggies and protein when you can!";
+    }
+
+    return "I didn't quite catch that. I can log weight, water, sleep, steps, mood, workouts and meals, or set reminders. Say \"help\" for examples. 🌿";
+  }
+
+  function capitalize(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+
+  /* ---------- Chat UI ---------- */
+  var launch = document.getElementById("assistant-launch");
+  var panel = document.getElementById("assistant-panel");
+  var closeBtn = document.getElementById("assistant-close");
+  var logEl = document.getElementById("assistant-log");
+  var chipsEl = document.getElementById("assistant-chips");
+  var form = document.getElementById("assistant-form");
+  var input = document.getElementById("assistant-text");
+  var assistantOpen = false;
+  var chat = readStore(C_KEY);
+
+  function pushMsg(text, who) {
+    chat.push({ text: text, who: who });
+    if (chat.length > 40) chat = chat.slice(-40);
+    writeStore(C_KEY, chat);
+  }
+  function renderMsg(text, who) {
+    if (!logEl) return;
+    var el = document.createElement("div");
+    el.className = "msg " + who;
+    el.textContent = text;
+    logEl.appendChild(el);
+    logEl.scrollTop = logEl.scrollHeight;
+  }
+  function botSay(text) { renderMsg(text, "bot"); pushMsg(text, "bot"); }
+
+  var CHIPS = ["Log water", "Log workout", "Summary", "Remind me to stretch in 30 minutes", "Help"];
+  function renderChips() {
+    if (!chipsEl) return;
+    chipsEl.innerHTML = "";
+    CHIPS.forEach(function (c) {
+      var b = document.createElement("button");
+      b.className = "chip";
+      b.type = "button";
+      b.textContent = c;
+      b.addEventListener("click", function () { submitMessage(c); });
+      chipsEl.appendChild(b);
+    });
+  }
+
+  function submitMessage(text) {
+    text = (text || "").trim();
+    if (!text) return;
+    renderMsg(text, "user");
+    pushMsg(text, "user");
+    var reply = handle(text);
+    // Tiny delay to feel conversational.
+    setTimeout(function () { botSay(reply); }, 220);
+    if (input) input.value = "";
+  }
+
+  function openAssistant() {
+    if (!panel) return;
+    panel.hidden = false;
+    assistantOpen = true;
+    if (launch) launch.setAttribute("aria-expanded", "true");
+    if (!logEl.childElementCount) {
+      if (chat.length) {
+        chat.forEach(function (m) { renderMsg(m.text, m.who); });
+      } else {
+        botSay("Hi, I'm Vita 🌿 your health companion. I can log your weight, water, sleep, steps, mood and workouts — and set reminders. Try a chip below or type \"help\".");
+      }
+    }
+    setTimeout(function () { if (input) input.focus(); }, 50);
+  }
+  function closeAssistant() {
+    if (!panel) return;
+    panel.hidden = true;
+    assistantOpen = false;
+    if (launch) launch.setAttribute("aria-expanded", "false");
+  }
+
+  if (launch) launch.addEventListener("click", function () { assistantOpen ? closeAssistant() : openAssistant(); });
+  if (closeBtn) closeBtn.addEventListener("click", closeAssistant);
+  if (form) form.addEventListener("submit", function (e) { e.preventDefault(); submitMessage(input.value); });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape" && assistantOpen) closeAssistant(); });
+
+  renderChips();
+  renderAll();
 
   /* ===== Newsletter (client-side demo only) ===== */
   var nlForm = document.getElementById("newsletter-form");

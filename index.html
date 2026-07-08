@@ -35,8 +35,8 @@
         <li><a href="#tracker">Habits</a></li>
         <li><a href="#water">Water</a></li>
         <li><a href="#workout">Workouts</a></li>
+        <li><a href="#journal">Journal</a></li>
         <li><a href="#bmi">BMI Tool</a></li>
-        <li><a href="#articles">Articles</a></li>
         <li>
           <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Toggle dark mode" title="Toggle dark mode">
             <span class="theme-icon" aria-hidden="true">🌙</span>
@@ -257,8 +257,39 @@
       </div>
     </section>
 
+    <!-- Health Journal (populated by Vita, the AI assistant) -->
+    <section id="journal" class="section section-alt">
+      <div class="container">
+        <div class="section-head">
+          <h2>Your health journal</h2>
+          <p>Everything you log with <strong>Vita</strong>, your assistant, is tracked here — private to this browser. Tap the 💬 button to chat.</p>
+        </div>
+        <div class="journal-stats" id="journal-stats"><!-- snapshot tiles injected by script.js --></div>
+        <div class="journal-cols">
+          <div class="card journal-panel">
+            <div class="journal-panel-head">
+              <h3>Recent entries</h3>
+              <button type="button" class="link-btn" id="journal-clear">Clear</button>
+            </div>
+            <ul class="journal-list" id="journal-list">
+              <li class="journal-empty">No entries yet. Open Vita (💬) and try <em>"log weight 70kg"</em>.</li>
+            </ul>
+          </div>
+          <div class="card journal-panel">
+            <div class="journal-panel-head">
+              <h3>Reminders</h3>
+              <button type="button" class="link-btn" id="reminders-clear">Clear</button>
+            </div>
+            <ul class="reminder-list" id="reminder-list">
+              <li class="journal-empty">No reminders yet. Try <em>"remind me to stretch in 30 minutes"</em>.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- Articles -->
-    <section id="articles" class="section section-alt">
+    <section id="articles" class="section">
       <div class="container">
         <div class="section-head">
           <h2>Latest from the blog</h2>
@@ -321,6 +352,35 @@
       </div>
     </section>
   </main>
+
+  <!-- Vita — AI health assistant -->
+  <div class="assistant" id="assistant">
+    <button class="assistant-launch" id="assistant-launch" aria-label="Open Vita, your health assistant" aria-expanded="false">
+      <span class="assistant-launch-icon" aria-hidden="true">💬</span>
+    </button>
+    <div class="assistant-panel" id="assistant-panel" role="dialog" aria-label="Vita health assistant" hidden>
+      <header class="assistant-head">
+        <div class="assistant-id">
+          <span class="assistant-avatar" aria-hidden="true">🌿</span>
+          <div>
+            <p class="assistant-name">Vita</p>
+            <p class="assistant-role">Your health companion</p>
+          </div>
+        </div>
+        <button class="assistant-close" id="assistant-close" type="button" aria-label="Close assistant">✕</button>
+      </header>
+      <div class="assistant-log" id="assistant-log" role="log" aria-live="polite"></div>
+      <div class="assistant-chips" id="assistant-chips" aria-label="Quick actions"></div>
+      <form class="assistant-input" id="assistant-form" autocomplete="off">
+        <label class="sr-only" for="assistant-text">Message Vita</label>
+        <input id="assistant-text" placeholder='Try: "log weight 70kg"' />
+        <button type="submit" aria-label="Send message">➤</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Reminder/notification toasts -->
+  <div class="toast-stack" id="toast-stack" aria-live="assertive"></div>
 
   <footer class="site-footer">
     <div class="container footer-inner">
