@@ -96,6 +96,34 @@
       Always consult a qualified healthcare professional for personal guidance.
     </div>
 
+    <!-- Persona / level selector -->
+    <section id="persona" class="persona-band">
+      <div class="container">
+        <div class="section-head">
+          <h2>Health is for every body</h2>
+          <p>Whether you're taking your first steps or chasing a new PR, tell us where you are — we'll tailor the workouts and Vita's coaching to you. Change it anytime.</p>
+        </div>
+        <div class="persona-grid" id="persona-grid" role="group" aria-label="Choose your level">
+          <button class="persona-card" data-level="starter" type="button" aria-pressed="false">
+            <span class="persona-emoji" aria-hidden="true">🌱</span>
+            <span class="persona-title">Just starting</span>
+            <span class="persona-desc">New to caring for your health — gentle, simple, no pressure.</span>
+          </button>
+          <button class="persona-card" data-level="fit" type="button" aria-pressed="false">
+            <span class="persona-emoji" aria-hidden="true">🚶</span>
+            <span class="persona-title">Keeping fit</span>
+            <span class="persona-desc">Active and building consistent, balanced everyday habits.</span>
+          </button>
+          <button class="persona-card" data-level="athlete" type="button" aria-pressed="false">
+            <span class="persona-emoji" aria-hidden="true">🏆</span>
+            <span class="persona-title">Athlete / bodybuilder</span>
+            <span class="persona-desc">Training hard — macros, progressive overload, and recovery.</span>
+          </button>
+        </div>
+        <p class="persona-note" id="persona-note" role="status"></p>
+      </div>
+    </section>
+
     <!-- Pillars -->
     <section id="pillars" class="section">
       <div class="container">
@@ -299,6 +327,74 @@
       </div>
     </section>
 
+    <!-- Fuel / macro calculator -->
+    <section id="nutrition" class="section section-alt">
+      <div class="container">
+        <div class="section-head">
+          <h2>Fuel calculator</h2>
+          <p>Estimate your daily calories and protein target — whether you're cutting, maintaining, or building muscle. Uses the Mifflin-St Jeor equation.</p>
+        </div>
+        <form class="macro-tool card" id="macro-form">
+          <div class="unit-toggle" role="group" aria-label="Units">
+            <button type="button" class="munit-btn active" data-unit="metric">Metric</button>
+            <button type="button" class="munit-btn" data-unit="imperial">Imperial</button>
+          </div>
+          <div class="macro-fields">
+            <label class="field">
+              <span>Age</span>
+              <input type="number" id="m-age" min="12" max="100" inputmode="numeric" placeholder="30" />
+            </label>
+            <label class="field">
+              <span>Sex</span>
+              <select id="m-sex">
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+              </select>
+            </label>
+            <label class="field">
+              <span id="m-height-label">Height (cm)</span>
+              <input type="number" id="m-height" min="1" step="any" inputmode="decimal" placeholder="175" />
+            </label>
+            <label class="field">
+              <span id="m-weight-label">Weight (kg)</span>
+              <input type="number" id="m-weight" min="1" step="any" inputmode="decimal" placeholder="75" />
+            </label>
+            <label class="field">
+              <span>Activity</span>
+              <select id="m-activity">
+                <option value="1.2">Sedentary (desk job)</option>
+                <option value="1.375">Light (1–3 workouts/wk)</option>
+                <option value="1.55" selected>Moderate (3–5 workouts/wk)</option>
+                <option value="1.725">Active (6–7 workouts/wk)</option>
+                <option value="1.9">Athlete (2×/day)</option>
+              </select>
+            </label>
+            <label class="field">
+              <span>Goal</span>
+              <select id="m-goal">
+                <option value="cut">Lose fat (cut)</option>
+                <option value="maintain" selected>Maintain</option>
+                <option value="bulk">Build muscle (bulk)</option>
+              </select>
+            </label>
+          </div>
+          <button type="submit" class="btn">Calculate my fuel</button>
+          <div class="macro-result" id="macro-result" hidden>
+            <div class="macro-cal">
+              <span class="macro-cal-value" id="m-calories">–</span>
+              <span class="macro-cal-label">calories / day</span>
+            </div>
+            <div class="macro-tiles">
+              <div class="macro-tile macro-p"><span id="m-protein">–</span><small>Protein</small></div>
+              <div class="macro-tile macro-c"><span id="m-carbs">–</span><small>Carbs</small></div>
+              <div class="macro-tile macro-f"><span id="m-fat">–</span><small>Fat</small></div>
+            </div>
+            <p class="macro-note" id="m-note"></p>
+          </div>
+        </form>
+      </div>
+    </section>
+
     <!-- Health Journal (populated by Vita, the AI assistant) -->
     <section id="journal" class="section section-alt">
       <div class="container">
@@ -419,6 +515,10 @@
 
   <!-- Vita — AI health assistant -->
   <div class="assistant" id="assistant">
+    <div class="assistant-greeting" id="assistant-greeting" hidden>
+      <button class="greeting-close" id="greeting-close" type="button" aria-label="Dismiss">✕</button>
+      <p id="greeting-text"></p>
+    </div>
     <button class="assistant-launch" id="assistant-launch" aria-label="Open Vita, your health assistant" aria-expanded="false">
       <span class="assistant-launch-icon" aria-hidden="true">💬</span>
     </button>
@@ -428,15 +528,19 @@
           <span class="assistant-avatar" aria-hidden="true">🌿</span>
           <div>
             <p class="assistant-name">Vita</p>
-            <p class="assistant-role">Your health companion</p>
+            <p class="assistant-role" id="assistant-role">Your health companion</p>
           </div>
         </div>
-        <button class="assistant-close" id="assistant-close" type="button" aria-label="Close assistant">✕</button>
+        <div class="assistant-head-actions">
+          <button class="assistant-icon-btn" id="assistant-voice" type="button" aria-label="Turn Vita's voice on" aria-pressed="false" title="Voice on/off">🔈</button>
+          <button class="assistant-icon-btn" id="assistant-close" type="button" aria-label="Close assistant">✕</button>
+        </div>
       </header>
       <div class="assistant-log" id="assistant-log" role="log" aria-live="polite"></div>
       <div class="assistant-chips" id="assistant-chips" aria-label="Quick actions"></div>
       <form class="assistant-input" id="assistant-form" autocomplete="off">
         <label class="sr-only" for="assistant-text">Message Vita</label>
+        <button type="button" class="assistant-mic" id="assistant-mic" aria-label="Speak to Vita" title="Voice input" hidden>🎤</button>
         <input id="assistant-text" placeholder='Try: "log weight 70kg"' />
         <button type="submit" aria-label="Send message">➤</button>
       </form>

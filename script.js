@@ -825,24 +825,27 @@
     if (!text) return;
     renderMsg(text, "user");
     pushMsg(text, "user");
-    var reply = handle(text);
-    // Tiny delay to feel conversational.
-    setTimeout(function () { botSay(reply); }, 220);
     if (input) input.value = "";
+    var reply = handle(text);
+    showTyping();
+    setTimeout(function () {
+      hideTyping();
+      botSay(reply);
+      speak(reply);
+    }, 480);
   }
 
   function openAssistant() {
     if (!panel) return;
     panel.hidden = false;
     assistantOpen = true;
+    hideGreetingBubble();
     if (launch) launch.setAttribute("aria-expanded", "true");
-    if (!logEl.childElementCount) {
-      if (chat.length) {
-        chat.forEach(function (m) { renderMsg(m.text, m.who); });
-      } else {
-        botSay("Hi, I'm Vita 🌿 your health companion. I can log your weight, water, sleep, steps, mood and workouts — and set reminders. Try a chip below or type \"help\".");
-      }
+    if (!logEl.childElementCount && chat.length) {
+      chat.forEach(function (m) { renderMsg(m.text, m.who); });
     }
+    // JARVIS-style: deliver a fresh, context-aware briefing on open.
+    proactiveGreet();
     setTimeout(function () { if (input) input.focus(); }, 50);
   }
   function closeAssistant() {
@@ -1155,6 +1158,260 @@
   if (themeToggle) themeToggle.addEventListener("click", function () { setTimeout(renderTrends, 0); });
 
   renderTrends();
+
+  /* ===== Persona / level personalization ===== */
+  var PERSONA_KEY = "vh-level";
+  var currentPersona = null;
+  var personaGrid = document.getElementById("persona-grid");
+  var personaNote = document.getElementById("persona-note");
+  var PERSONAS = {
+    starter: {
+      title: "Just starting",
+      note: "Welcome! We'll keep things gentle and simple — start with the beginner moves and let Vita cheer you on. 🌱",
+      wkLevel: "beginner", wkGoal: "general", role: "Your gentle guide",
+    },
+    fit: {
+      title: "Keeping fit",
+      note: "Nice — let's keep you consistent. Your planner is set for balanced, moderate training. 🚶",
+      wkLevel: "intermediate", wkGoal: "general", role: "Your fitness partner",
+    },
+    athlete: {
+      title: "Athlete / bodybuilder",
+      note: "Let's build. Your planner is set to advanced strength — use the Fuel calculator to dial in protein and macros. 🏆",
+      wkLevel: "advanced", wkGoal: "strength", role: "Your training coach",
+    },
+  };
+  function setPersona(level, opts) {
+    if (!PERSONAS[level]) return;
+    currentPersona = level;
+    document.documentElement.setAttribute("data-level", level);
+    try { localStorage.setItem(PERSONA_KEY, level); } catch (e) {}
+    if (personaGrid) {
+      personaGrid.querySelectorAll(".persona-card").forEach(function (c) {
+        c.setAttribute("aria-pressed", String(c.dataset.level === level));
+      });
+    }
+    if (personaNote) personaNote.textContent = PERSONAS[level].note;
+    var wl = document.getElementById("wk-level"), wg = document.getElementById("wk-goal");
+    if (wl) wl.value = PERSONAS[level].wkLevel;
+    if (wg) wg.value = PERSONAS[level].wkGoal;
+    var roleEl = document.getElementById("assistant-role");
+    if (roleEl) roleEl.textContent = PERSONAS[level].role;
+    if (opts && opts.announce && assistantOpen) {
+      var line = "Got it — I'll coach you as \"" + PERSONAS[level].title + "\". " + PERSONAS[level].note;
+      botSay(line); speak(line);
+    }
+  }
+  if (personaGrid) {
+    personaGrid.addEventListener("click", function (e) {
+      var card = e.target.closest(".persona-card");
+      if (card) setPersona(card.dataset.level, { announce: true });
+    });
+    var savedLevel = null;
+    try { savedLevel = localStorage.getItem(PERSONA_KEY); } catch (e) {}
+    if (savedLevel && PERSONAS[savedLevel]) setPersona(savedLevel);
+  }
+
+  /* ===== Fuel / macro calculator ===== */
+  var macroForm = document.getElementById("macro-form");
+  if (macroForm) {
+    var macroUnit = "metric";
+    var mHeightLabel = document.getElementById("m-height-label");
+    var mWeightLabel = document.getElementById("m-weight-label");
+    var mHeight = document.getElementById("m-height");
+    var mWeight = document.getElementById("m-weight");
+    var munitBtns = Array.prototype.slice.call(document.querySelectorAll(".munit-btn"));
+    munitBtns.forEach(function (b) {
+      b.addEventListener("click", function () {
+        macroUnit = b.dataset.unit;
+        munitBtns.forEach(function (x) { x.classList.toggle("active", x === b); });
+        if (macroUnit === "metric") {
+          mHeightLabel.textContent = "Height (cm)"; mWeightLabel.textContent = "Weight (kg)";
+          mHeight.placeholder = "175"; mWeight.placeholder = "75";
+        } else {
+          mHeightLabel.textContent = "Height (in)"; mWeightLabel.textContent = "Weight (lb)";
+          mHeight.placeholder = "69"; mWeight.placeholder = "165";
+        }
+        mHeight.value = ""; mWeight.value = "";
+      });
+    });
+    macroForm.addEventListener("submit", function (e) {
+      e.preventDefault();
+      var age = parseFloat(document.getElementById("m-age").value);
+      var sex = document.getElementById("m-sex").value;
+      var h = parseFloat(mHeight.value);
+      var w = parseFloat(mWeight.value);
+      var activity = parseFloat(document.getElementById("m-activity").value);
+      var goal = document.getElementById("m-goal").value;
+      var box = document.getElementById("macro-result");
+      var calEl = document.getElementById("m-calories");
+      var pEl = document.getElementById("m-protein"), cEl = document.getElementById("m-carbs"), fEl = document.getElementById("m-fat");
+      var noteEl = document.getElementById("m-note");
+      box.hidden = false;
+      if (!(age > 0) || !(h > 0) || !(w > 0)) {
+        calEl.textContent = "–"; pEl.textContent = cEl.textContent = fEl.textContent = "–";
+        noteEl.textContent = "Please enter your age, height, and weight.";
+        return;
+      }
+      var kg = macroUnit === "metric" ? w : w * 0.453592;
+      var cm = macroUnit === "metric" ? h : h * 2.54;
+      var bmr = 10 * kg + 6.25 * cm - 5 * age + (sex === "male" ? 5 : -161);
+      var tdee = bmr * activity;
+      var cal = goal === "cut" ? tdee - 400 : goal === "bulk" ? tdee + 350 : tdee;
+      cal = Math.max(1200, Math.round(cal / 10) * 10);
+      var proteinPerKg = goal === "cut" ? 2.2 : goal === "bulk" ? 2.0 : 1.8;
+      var protein = Math.round(proteinPerKg * kg);
+      var fat = Math.round((cal * 0.25) / 9);
+      var carbs = Math.max(0, Math.round((cal - protein * 4 - fat * 9) / 4));
+      calEl.textContent = cal.toLocaleString();
+      pEl.textContent = protein + "g"; cEl.textContent = carbs + "g"; fEl.textContent = fat + "g";
+      noteEl.textContent = (goal === "cut" ? "A ~400 kcal deficit for steady fat loss while protein protects muscle. "
+        : goal === "bulk" ? "A modest surplus to build muscle with minimal fat gain — train hard! "
+        : "Balanced to maintain your current weight. ") + "Estimates only — adjust to how your body responds.";
+    });
+  }
+
+  /* =====================================================================
+     Vita — JARVIS-style layer: voice, proactive greeting, voice input
+     ===================================================================== */
+  var VOICE_KEY = "vh-voice";
+  var voiceOn = false;
+  try { voiceOn = localStorage.getItem(VOICE_KEY) === "on"; } catch (e) {}
+  var voiceBtn = document.getElementById("assistant-voice");
+  var micBtn = document.getElementById("assistant-mic");
+  var greetingBubble = document.getElementById("assistant-greeting");
+  var greetingText = document.getElementById("greeting-text");
+  var greetingCloseBtn = document.getElementById("greeting-close");
+  var ttsSupported = "speechSynthesis" in window;
+  var pickedVoice = null;
+  var lastGreetAt = 0;
+
+  function chooseVoice() {
+    if (!ttsSupported) return;
+    var voices = window.speechSynthesis.getVoices();
+    if (!voices.length) return;
+    pickedVoice = voices.filter(function (v) { return /en-GB/i.test(v.lang); })[0]
+      || voices.filter(function (v) { return /^en/i.test(v.lang); })[0]
+      || voices[0];
+  }
+  if (ttsSupported) {
+    chooseVoice();
+    window.speechSynthesis.onvoiceschanged = chooseVoice;
+  }
+  function speak(text) {
+    if (!voiceOn || !ttsSupported || !text) return;
+    try {
+      window.speechSynthesis.cancel();
+      var clean = text.replace(/[\u{1F000}-\u{1FFFF}←-➿⬀-⯿•]/gu, "").replace(/\s+/g, " ").trim();
+      if (!clean) return;
+      var u = new SpeechSynthesisUtterance(clean);
+      if (pickedVoice) u.voice = pickedVoice;
+      u.rate = 1; u.pitch = 1;
+      window.speechSynthesis.speak(u);
+    } catch (e) {}
+  }
+  function updateVoiceBtn() {
+    if (!voiceBtn) return;
+    voiceBtn.textContent = voiceOn ? "🔊" : "🔈";
+    voiceBtn.setAttribute("aria-pressed", String(voiceOn));
+    voiceBtn.setAttribute("aria-label", voiceOn ? "Turn Vita's voice off" : "Turn Vita's voice on");
+  }
+  if (voiceBtn) {
+    if (!ttsSupported) voiceBtn.hidden = true;
+    updateVoiceBtn();
+    voiceBtn.addEventListener("click", function () {
+      voiceOn = !voiceOn;
+      try { localStorage.setItem(VOICE_KEY, voiceOn ? "on" : "off"); } catch (e) {}
+      updateVoiceBtn();
+      if (voiceOn) speak("Voice enabled. I'm here whenever you need me.");
+      else if (ttsSupported) window.speechSynthesis.cancel();
+    });
+  }
+
+  // Typing indicator
+  var typingEl = null;
+  function showTyping() {
+    if (!logEl || typingEl) return;
+    typingEl = document.createElement("div");
+    typingEl.className = "msg bot typing";
+    typingEl.innerHTML = "<span></span><span></span><span></span>";
+    logEl.appendChild(typingEl);
+    logEl.scrollTop = logEl.scrollHeight;
+  }
+  function hideTyping() { if (typingEl) { typingEl.remove(); typingEl = null; } }
+
+  // Proactive, context-aware greeting (JARVIS-style briefing)
+  function vitaGreeting() {
+    var hr = new Date().getHours();
+    var partOfDay = hr < 12 ? "Good morning" : hr < 18 ? "Good afternoon" : "Good evening";
+    var s = snapshot();
+    var lines = [partOfDay + ". Vita online and at your service. 🌿"];
+    var insights = [];
+    if (s.water < 8) insights.push("You're at " + s.water + "/8 glasses of water — say \"log water\" and I'll track it.");
+    if (!s.sleep) insights.push("You haven't logged sleep yet — how did you rest?");
+    if (!s.steps) insights.push("No steps logged today — even a short walk counts.");
+    var pending = reminders.filter(function (r) { return !r.fired; }).length;
+    if (pending) insights.push("You have " + pending + " reminder" + (pending === 1 ? "" : "s") + " pending.");
+    if (currentPersona === "athlete") insights.push("Training day? Open the Fuel calculator to hit your protein target.");
+    if (currentPersona === "starter") insights.push("One small habit today is a win — what shall we log first?");
+    lines.push(insights.length ? insights[Math.floor(Math.random() * insights.length)] : "You're on track today. What can I help you log?");
+    return lines.join(" ");
+  }
+  function proactiveGreet() {
+    var now = Date.now();
+    if (now - lastGreetAt < 60000) return; // throttle rapid re-opens
+    lastGreetAt = now;
+    var g = vitaGreeting();
+    botSay(g);
+    speak(g);
+  }
+
+  // Greeting bubble shown when the panel is closed
+  function showGreetingBubble() {
+    if (!greetingBubble || assistantOpen) return;
+    var hr = new Date().getHours();
+    var part = hr < 12 ? "Good morning" : hr < 18 ? "Good afternoon" : "Good evening";
+    greetingText.textContent = part + " — I'm Vita. Tap to log your health or set a reminder.";
+    greetingBubble.hidden = false;
+  }
+  function hideGreetingBubble() { if (greetingBubble) greetingBubble.hidden = true; }
+  if (greetingCloseBtn) greetingCloseBtn.addEventListener("click", function (e) {
+    e.stopPropagation(); hideGreetingBubble();
+  });
+  if (greetingBubble) greetingBubble.addEventListener("click", openAssistant);
+
+  // Voice input (Web Speech API) — feature-detected; button stays hidden if unsupported
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (SR && micBtn) {
+    micBtn.hidden = false;
+    var recog = new SR();
+    recog.lang = "en-US"; recog.interimResults = false; recog.maxAlternatives = 1;
+    var listening = false;
+    micBtn.addEventListener("click", function () {
+      if (listening) { try { recog.stop(); } catch (e) {} return; }
+      try { recog.start(); } catch (e) {}
+    });
+    recog.onstart = function () { listening = true; micBtn.classList.add("listening"); };
+    recog.onend = function () { listening = false; micBtn.classList.remove("listening"); };
+    recog.onerror = function () { listening = false; micBtn.classList.remove("listening"); };
+    recog.onresult = function (ev) {
+      var t = ev.results[0][0].transcript;
+      submitMessage(t);
+    };
+  }
+
+  // Auto-open once per tab session; otherwise nudge with the greeting bubble.
+  var openedThisSession = false;
+  try { openedThisSession = sessionStorage.getItem("vh-opened") === "1"; } catch (e) {}
+  setTimeout(function () {
+    if (!panel) return;
+    if (!openedThisSession) {
+      try { sessionStorage.setItem("vh-opened", "1"); } catch (e) {}
+      openAssistant();
+    } else {
+      showGreetingBubble();
+    }
+  }, 800);
 
   /* ===== Newsletter (client-side demo only) ===== */
   var nlForm = document.getElementById("newsletter-form");

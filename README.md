@@ -4,10 +4,17 @@ A clean, responsive **health & wellness website** — evidence-based guidance pl
 
 ## Features
 
-- **Vita — AI health assistant** 💬 A chat companion (bottom-right) that understands
-  plain-language commands to **log** your weight, water, sleep, steps, mood, workouts,
-  and meals, and to **set reminders** (`"remind me to stretch in 30 minutes"`,
-  `"at 3pm"`). Fires browser notifications + on-screen toasts when reminders are due.
+- **Vita — a JARVIS-style AI assistant** 💬 A proactive chat companion that **greets
+  you on open** with a time- and data-aware briefing, can **speak** (text-to-speech)
+  and **listen** (voice input via the mic), and shows a typing indicator. It
+  understands plain-language commands to **log** your weight, water, sleep, steps,
+  mood, workouts, and meals, and to **set reminders** (`"remind me to stretch in 30
+  minutes"`, `"at 3pm"`) — firing browser notifications + on-screen toasts when due.
+- **Personalized for every body** — a "Choose your path" selector (Just starting /
+  Keeping fit / Athlete-bodybuilder) tailors the workout planner defaults and Vita's
+  coaching tone to your level.
+- **Fuel calculator** — estimates daily calories and protein/carb/fat targets for
+  cutting, maintaining, or bulking (Mifflin-St Jeor).
 - **Health journal** — a live dashboard of everything Vita logs: today's snapshot
   tiles, recent entries, and active reminders. All data stays in `localStorage`.
 - **Trends over time** — small-multiple charts (weight, water, sleep, steps) built
