@@ -309,7 +309,7 @@ img { max-width: 100%; }
 }
 .link-btn:hover { text-decoration: underline; }
 .journal-stats {
-  display: grid; grid-template-columns: repeat(6, 1fr); gap: 14px; margin-bottom: 22px;
+  display: grid; grid-template-columns: repeat(7, 1fr); gap: 14px; margin-bottom: 22px;
 }
 .stat-tile {
   background: var(--white); border-radius: var(--radius-sm); padding: 16px 12px;

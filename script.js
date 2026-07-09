@@ -452,7 +452,9 @@
     var water = t.filter(function (e) { return e.type === "water"; })
       .reduce(function (s, e) { return s + (e.value || 1); }, 0);
     var workouts = t.filter(function (e) { return e.type === "workout"; }).length;
-    return { weight: weight, sleep: sleep, steps: steps, mood: mood, water: water, workouts: workouts };
+    var calories = latest("calories");
+    var hr = latest("hr");
+    return { weight: weight, sleep: sleep, steps: steps, mood: mood, water: water, workouts: workouts, calories: calories, hr: hr };
   }
 
   function renderStats() {
@@ -465,6 +467,7 @@
       { emoji: "👟", label: "Steps", value: s.steps ? Number(s.steps.value).toLocaleString() : "—" },
       { emoji: s.mood ? s.mood.emoji : "🙂", label: "Mood", value: s.mood ? '<small style="font-size:.8rem">' + s.mood.value + "</small>" : "—" },
       { emoji: "🏋️", label: "Workouts", value: String(s.workouts) },
+      { emoji: "🔥", label: "Calories", value: s.calories ? Number(s.calories.value).toLocaleString() + " <small>kcal</small>" : "—" },
     ];
     journalStats.innerHTML = tiles.map(function (t) {
       return '<div class="stat-tile"><span class="stat-emoji">' + t.emoji +
@@ -763,6 +766,8 @@
       if (s.steps) parts.push("👟 Steps: " + Number(s.steps.value).toLocaleString());
       if (s.mood) parts.push(s.mood.emoji + " Mood: " + s.mood.value);
       if (s.workouts) parts.push("🏋️ Workouts: " + s.workouts);
+      if (s.calories) parts.push("🔥 Active: " + Number(s.calories.value).toLocaleString() + " kcal");
+      if (s.hr) parts.push("❤️ Avg HR: " + s.hr.value + " bpm");
       var upcoming = reminders.filter(function (r) { return !r.fired; }).length;
       if (upcoming) parts.push("⏰ " + upcoming + " reminder" + (upcoming === 1 ? "" : "s") + " pending");
       return "Here's today so far:\n" + parts.join("\n") +
@@ -1039,6 +1044,7 @@
     { type: "water", title: "Water", emoji: "💧", unit: "glasses", kind: "bar", agg: "sum", series: "#199e70", seriesDark: "#199e70", fmt: function (v) { return v; } },
     { type: "sleep", title: "Sleep", emoji: "😴", unit: "hours", kind: "bar", agg: "last", series: "#4a3aa7", seriesDark: "#9085e9", fmt: function (v) { return v; } },
     { type: "steps", title: "Steps", emoji: "👟", unit: "steps", kind: "bar", agg: "last", series: "#eb6834", seriesDark: "#d95926", fmt: function (v) { return Number(v).toLocaleString(); } },
+    { type: "calories", title: "Active calories", emoji: "🔥", unit: "kcal", kind: "bar", agg: "last", series: "#eda100", seriesDark: "#c98500", fmt: function (v) { return Math.round(v).toLocaleString(); } },
     {
       type: "mood", title: "Mood", emoji: "🙂", unit: "", kind: "line", agg: "last",
       domain: [1, 5], noDelta: true, series: "#e87ba4", seriesDark: "#d55181",
@@ -2342,7 +2348,27 @@
   var healthMsg = document.getElementById("health-msg");
   var healthSyncBtn = document.getElementById("health-sync");
 
-  function syncHealthSteps(interactive) {
+  var healthExtraEl = document.getElementById("health-extra");
+
+  // Replace today's synced entries of one type, then push the fresh ones.
+  function replaceSynced(type, entries) {
+    journal = journal.filter(function (e) {
+      return !(e.type === type && e.synced && isToday(e.ts));
+    });
+    entries.forEach(function (e) { journal.push(e); });
+  }
+  // The plugin doesn't document duration units; workouts are < 10 h, so a
+  // value that large can only be milliseconds.
+  function workoutMinutes(d) {
+    if (!d || d < 0) return 0;
+    return Math.round(d > 36000 ? d / 60000 : d / 60);
+  }
+  function prettyWorkoutType(t) {
+    var s = String(t || "workout").replace(/[_-]+/g, " ").toLowerCase();
+    return s.charAt(0).toUpperCase() + s.slice(1);
+  }
+
+  function syncHealth(interactive) {
     if (!healthPlugin) return;
     healthPlugin.isHealthAvailable().then(function (res) {
       if (!res || !res.available) {
@@ -2350,40 +2376,100 @@
         if (interactive && healthPlugin.showHealthConnectInPlayStore) healthPlugin.showHealthConnectInPlayStore();
         return;
       }
-      return healthPlugin.requestHealthPermissions({ permissions: ["READ_STEPS"] })
-        .then(function () {
-          var start = new Date();
-          start.setHours(0, 0, 0, 0);
-          return healthPlugin.queryAggregated({
-            startDate: start.toISOString(),
-            endDate: new Date().toISOString(),
-            dataType: "steps",
-            bucket: "day",
+      var start = new Date();
+      start.setHours(0, 0, 0, 0);
+      var startISO = start.toISOString();
+      var endISO = new Date().toISOString();
+      return healthPlugin.requestHealthPermissions({
+        permissions: ["READ_STEPS", "READ_ACTIVE_CALORIES", "READ_WORKOUTS", "READ_HEART_RATE"],
+      }).then(function () {
+        return Promise.all([
+          healthPlugin.queryAggregated({ startDate: startISO, endDate: endISO, dataType: "steps", bucket: "day" })
+            .catch(function () { return null; }),
+          healthPlugin.queryAggregated({ startDate: startISO, endDate: endISO, dataType: "active-calories", bucket: "day" })
+            .catch(function () { return null; }),
+          healthPlugin.queryWorkouts({ startDate: startISO, endDate: endISO, includeHeartRate: true, includeRoute: false, includeSteps: false })
+            .catch(function () { return null; }),
+        ]);
+      }).then(function (results) {
+        var now = Date.now();
+        var parts = [];
+
+        // Steps
+        var steps = 0;
+        (((results[0] || {}).aggregatedData) || []).forEach(function (s) { steps += s.value || 0; });
+        steps = Math.round(steps);
+        if (healthStepsEl) healthStepsEl.textContent = steps.toLocaleString();
+        if (steps > 0) {
+          replaceSynced("steps", [{
+            id: uid(), ts: now, type: "steps", emoji: "⌚",
+            text: steps.toLocaleString() + " steps (synced)", value: steps, unit: "steps", synced: true,
+          }]);
+          parts.push(steps.toLocaleString() + " steps");
+        }
+
+        // Active calories
+        var kcal = 0;
+        (((results[1] || {}).aggregatedData) || []).forEach(function (s) { kcal += s.value || 0; });
+        kcal = Math.round(kcal);
+        if (kcal > 0) {
+          replaceSynced("calories", [{
+            id: uid(), ts: now, type: "calories", emoji: "🔥",
+            text: kcal.toLocaleString() + " kcal active (synced)", value: kcal, unit: "kcal", synced: true,
+          }]);
+          parts.push(kcal.toLocaleString() + " kcal");
+        }
+
+        // Workouts (+ heart rate riding along on their samples)
+        var workouts = ((results[2] || {}).workouts) || [];
+        var hrSamples = [];
+        if (workouts.length) {
+          var wEntries = workouts.map(function (w) {
+            var mins = workoutMinutes(w.duration);
+            var wkcal = Math.round(w.calories || 0);
+            var avg = null;
+            if (w.heartRate && w.heartRate.length) {
+              var sum = 0;
+              w.heartRate.forEach(function (h) { sum += h.bpm || 0; hrSamples.push(h); });
+              avg = Math.round(sum / w.heartRate.length);
+            }
+            var label = prettyWorkoutType(w.workoutType) +
+              (mins ? " " + mins + " min" : "") +
+              (wkcal ? ", " + wkcal + " kcal" : "") +
+              (avg ? ", ~" + avg + " bpm" : "") + " (synced)";
+            return {
+              id: uid(), ts: now, type: "workout", emoji: "⌚",
+              text: label, value: mins || null, unit: "min", synced: true,
+            };
           });
-        })
-        .then(function (resp) {
-          var total = 0;
-          ((resp && resp.aggregatedData) || []).forEach(function (s) { total += s.value || 0; });
-          total = Math.round(total);
-          if (healthStepsEl) healthStepsEl.textContent = total.toLocaleString();
-          if (!total) {
-            if (interactive && healthMsg) healthMsg.textContent = "No steps recorded yet today.";
-            return;
-          }
-          // Replace today's synced entry instead of stacking duplicates.
-          journal = journal.filter(function (e) {
-            return !(e.type === "steps" && e.synced && isToday(e.ts));
-          });
-          journal.push({
-            id: uid(), ts: Date.now(), type: "steps", emoji: "⌚",
-            text: total.toLocaleString() + " steps (synced)", value: total,
-            unit: "steps", synced: true,
-          });
-          writeStore(J_KEY, journal);
-          renderAll();
-          document.dispatchEvent(new CustomEvent("vh:journal-changed"));
-          if (healthMsg) healthMsg.textContent = "Synced " + total.toLocaleString() + " steps from your phone/watch. ⌚";
-        });
+          replaceSynced("workout", wEntries);
+          parts.push(workouts.length + " workout" + (workouts.length === 1 ? "" : "s"));
+        }
+
+        // Heart rate summary across today's workouts
+        if (hrSamples.length) {
+          var hsum = 0;
+          hrSamples.forEach(function (h) { hsum += h.bpm || 0; });
+          var havg = Math.round(hsum / hrSamples.length);
+          replaceSynced("hr", [{
+            id: uid(), ts: now, type: "hr", emoji: "❤️",
+            text: "Avg " + havg + " bpm across workouts (synced)", value: havg, unit: "bpm", synced: true,
+          }]);
+          parts.push("~" + havg + " bpm");
+        }
+
+        if (healthExtraEl) {
+          healthExtraEl.textContent = parts.length > 1 ? parts.slice(1).join(" · ") : "";
+        }
+        if (!parts.length) {
+          if (interactive && healthMsg) healthMsg.textContent = "Nothing recorded yet today.";
+          return;
+        }
+        writeStore(J_KEY, journal);
+        renderAll();
+        document.dispatchEvent(new CustomEvent("vh:journal-changed"));
+        if (healthMsg) healthMsg.textContent = "Synced from your phone/watch: " + parts.join(" · ") + " ⌚";
+      });
     }).catch(function () {
       if (healthMsg) healthMsg.textContent = "Sync failed — check Health permissions for Vitality in your settings.";
     });
@@ -2392,9 +2478,9 @@
     healthCard.hidden = false;
     var webNote = document.getElementById("device-note-web");
     if (webNote) webNote.hidden = true; // browser limits don't apply in the native app
-    if (healthSyncBtn) healthSyncBtn.addEventListener("click", function () { syncHealthSteps(true); });
-    setTimeout(function () { syncHealthSteps(false); }, 1500); // auto-sync on open
-    document.addEventListener("resume", function () { syncHealthSteps(false); }); // Capacitor app resume
+    if (healthSyncBtn) healthSyncBtn.addEventListener("click", function () { syncHealth(true); });
+    setTimeout(function () { syncHealth(false); }, 1500); // auto-sync on open
+    document.addEventListener("resume", function () { syncHealth(false); }); // Capacitor app resume
   }
 
   /* ===== Newsletter (client-side demo only) ===== */

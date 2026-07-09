@@ -8,16 +8,19 @@ browser can't:
   (**Apple Health** on iOS, **Health Connect** on Android). The native app reads
   today's total whenever you open it and syncs it into your journal — the "⌚
   Phone & watch sync" card appears automatically in the Steps section.
-- **Watch data** — anything your watch writes into Apple Health / Health Connect
-  (steps today; the plugin also supports workouts, heart rate, calories,
-  distance if you want to extend the bridge in `script.js`).
+- **Watch data** — the bridge syncs today's **steps, workouts (with duration and
+  calories), active calories, and average heart rate** from Apple Health /
+  Health Connect into the journal, deduped per day. Everything shows up in the
+  snapshot tiles, trend charts, and Vita's summaries.
 
 \* Fitbit and Garmin sync into Health Connect / Apple Health via their own apps —
 enable that in the Fitbit/Garmin app settings, and the data flows through.
 
 The web bridge is already wired in `script.js` (search for "Native health
 sync") against the [`capacitor-health`](https://www.npmjs.com/package/capacitor-health)
-plugin — `READ_STEPS` permission, `queryAggregated({ dataType: "steps", bucket: "day" })`.
+plugin — permissions `READ_STEPS`, `READ_ACTIVE_CALORIES`, `READ_WORKOUTS`,
+`READ_HEART_RATE`; data via `queryAggregated` (steps, active-calories) and
+`queryWorkouts` (with heart-rate samples).
 
 ---
 
@@ -57,6 +60,9 @@ Inside the **root `<manifest>`** tag add:
 </queries>
 
 <uses-permission android:name="android.permission.health.READ_STEPS" />
+<uses-permission android:name="android.permission.health.READ_ACTIVE_CALORIES_BURNED" />
+<uses-permission android:name="android.permission.health.READ_EXERCISE" />
+<uses-permission android:name="android.permission.health.READ_HEART_RATE" />
 ```
 
 Inside the **`<application>`** tag add (required by Health Connect's
@@ -87,8 +93,8 @@ permission-rationale flow):
 
 1. Target → *Signing & Capabilities* → add the **HealthKit** capability.
 2. In `Info.plist` add:
-   - `NSHealthShareUsageDescription` — "Vitality Health reads your step count to
-     show your daily activity."
+   - `NSHealthShareUsageDescription` — "Vitality Health reads your steps,
+     workouts, calories, and heart rate to show your daily activity."
    - `NSHealthUpdateUsageDescription` — "Vitality Health does not write health
      data." (key must exist even if unused)
 
