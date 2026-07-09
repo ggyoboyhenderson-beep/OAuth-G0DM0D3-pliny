@@ -299,9 +299,18 @@
             </div>
             <p class="device-msg" id="hr-msg" role="status"></p>
           </div>
+          <div class="card device-card" id="health-card" hidden>
+            <h3>⌚ Phone &amp; watch sync</h3>
+            <p class="device-sub">Reads today's steps from Apple Health / Health Connect — your phone and watch count them 24/7, even with this app closed.</p>
+            <p class="device-big"><span id="health-steps">—</span> <small>steps today</small></p>
+            <div class="device-actions">
+              <button class="btn" id="health-sync" type="button">Sync now</button>
+            </div>
+            <p class="device-msg" id="health-msg" role="status"></p>
+          </div>
         </div>
-        <div class="device-note card" role="note">
-          <strong>About watches &amp; background tracking:</strong> for your privacy, a web app can't count steps while it's closed or read data from Apple Watch, Fitbit, or Garmin — those are closed systems that require a native companion app (Apple HealthKit, Google Fit, or the brand's SDK). What works here today: the <em>live counter</em> above (while the app is open) and any <em>standard Bluetooth heart-rate device</em>. For always-on syncing, keep logging with Vita, or use this alongside your watch's own app.
+        <div class="device-note card" role="note" id="device-note-web">
+          <strong>About watches &amp; background tracking:</strong> for your privacy, a web browser can't count steps while this app is closed or read Apple Watch / Fitbit / Garmin data. Those need the <strong>native companion app</strong> — this project ships one (see <code>NATIVE.md</code> in the repo): the same app wrapped for iOS/Android, which reads steps from Apple Health / Health Connect, where your phone and watch record them around the clock. In the browser you still get the <em>live counter</em> above and <em>Bluetooth heart-rate</em> pairing.
         </div>
       </div>
     </section>
