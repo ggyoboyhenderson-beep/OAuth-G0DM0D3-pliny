@@ -827,6 +827,13 @@
       return "Logged " + lname + " " + lw + " " + lunit + " × " + lreps + ". Estimated 1RM ≈ " + e1 + " " + lunit + ". 💪 Add a little weight when every rep feels solid.";
     }
 
+    // At-home workout suggestions
+    if (/\b(home workout|at home|no equipment|living room|apartment)\b/.test(low) && /\bworkout|exercise|train|sweat|routine|cardio|stretch\b/.test(low)) {
+      var picks = HOME_WORKOUTS.slice(0, 4).map(function (r) { return "• " + r.emoji + " " + r.name + " (" + r.mins + " min)"; }).join("\n");
+      return "🏠 I've got " + HOME_WORKOUTS.length + " no-equipment routines with a guided timer:\n" + picks +
+        "\n…and more in the At-home workouts section — tap ▶ Start and I'll pace you through it. It logs itself when you finish!";
+    }
+
     // Questions & how-tos run BEFORE the loose loggers, so "how much water
     // should I drink?" is answered instead of logging a glass. Keys are
     // specific phrases, so real log commands ("log water") won't match.
@@ -2855,6 +2862,163 @@
       reader.readAsText(f);
     });
   }
+
+  /* =====================================================================
+     At-home workouts — no-equipment routines with a guided player that
+     logs the finished session to the journal (streaks/history/charts).
+     ===================================================================== */
+  var HOME_CATS = { quick: "Quick", strength: "Strength", cardio: "Cardio & HIIT", recovery: "Stretch & recovery" };
+  var HOME_WORKOUTS = [
+    { id: "wake", emoji: "🌅", name: "Wake-up mobility", cat: "recovery", mins: 7, level: "All levels",
+      desc: "Gentle joints-and-spine flow to start the day.",
+      steps: [{ n: "March in place", t: 45 }, { n: "Cat–cow", t: 45 }, { n: "Standing side bends", t: 40 }, { n: "Hip circles", t: 40 }, { n: "Doorway chest stretch", t: 40 }, { n: "Hamstring stretch (left)", t: 40 }, { n: "Hamstring stretch (right)", t: 40 }, { n: "Slow deep squats", r: "6 reps" }, { n: "Shoulder rolls", t: 30 }] },
+    { id: "desk", emoji: "🪑", name: "Desk-break reset", cat: "quick", mins: 5, level: "All levels",
+      desc: "Undo an hour of sitting in five minutes.",
+      steps: [{ n: "Neck rolls", t: 30 }, { n: "Shoulder rolls", t: 30 }, { n: "Doorway chest stretch", t: 40 }, { n: "Standing hip flexor stretch (left)", t: 35 }, { n: "Standing hip flexor stretch (right)", t: 35 }, { n: "Chair sit-to-stands", r: "10 reps" }, { n: "Calf raises", r: "15 reps" }, { n: "March in place", t: 45 }] },
+    { id: "full15", emoji: "⚡", name: "15-minute full body", cat: "quick", mins: 15, level: "Beginner+",
+      desc: "The classic no-excuses session — every major muscle.",
+      steps: [{ n: "Jumping jacks (warm-up)", t: 45 }, { n: "Bodyweight squats", r: "12 reps" }, { n: "Incline or knee push-ups", r: "10 reps" }, { n: "Glute bridges", r: "12 reps" }, { n: "Rest", t: 30, rest: true }, { n: "Walking lunges", r: "8 each side" }, { n: "Plank", t: 30 }, { n: "Rest", t: 30, rest: true }, { n: "Squats (round 2)", r: "12 reps" }, { n: "Push-ups (round 2)", r: "10 reps" }, { n: "Bird-dog", r: "6 each side" }, { n: "Cool-down stretch", t: 60 }] },
+    { id: "core10", emoji: "🎯", name: "10-minute core blast", cat: "strength", mins: 10, level: "Beginner+",
+      desc: "Deep core, obliques, and lower back — floor only.",
+      steps: [{ n: "Dead bug", r: "8 each side" }, { n: "Plank", t: 30 }, { n: "Rest", t: 20, rest: true }, { n: "Bicycle crunches", r: "16 total" }, { n: "Side plank (left)", t: 25 }, { n: "Side plank (right)", t: 25 }, { n: "Rest", t: 20, rest: true }, { n: "Glute bridge hold", t: 30 }, { n: "Bird-dog", r: "6 each side" }, { n: "Plank (final)", t: 30 }, { n: "Child's pose stretch", t: 40 }] },
+    { id: "upper", emoji: "💪", name: "No-equipment upper body", cat: "strength", mins: 18, level: "Intermediate",
+      desc: "Chest, shoulders, arms, and back with just the floor and a chair.",
+      steps: [{ n: "Arm circles (warm-up)", t: 40 }, { n: "Push-ups", r: "10–12 reps" }, { n: "Chair tricep dips", r: "10 reps" }, { n: "Rest", t: 40, rest: true }, { n: "Pike push-ups", r: "8 reps" }, { n: "Doorframe rows or towel rows", r: "10 reps" }, { n: "Rest", t: 40, rest: true }, { n: "Push-ups (round 2)", r: "10 reps" }, { n: "Chair dips (round 2)", r: "10 reps" }, { n: "Plank shoulder taps", r: "12 total" }, { n: "Chest stretch", t: 40 }] },
+    { id: "legs", emoji: "🦵", name: "Legs & glutes burner", cat: "strength", mins: 18, level: "Intermediate",
+      desc: "Quads, glutes, and hamstrings — expect to feel the stairs tomorrow.",
+      steps: [{ n: "March in place (warm-up)", t: 45 }, { n: "Bodyweight squats", r: "15 reps" }, { n: "Walking lunges", r: "10 each side" }, { n: "Rest", t: 40, rest: true }, { n: "Glute bridges", r: "15 reps" }, { n: "Wall sit", t: 40 }, { n: "Rest", t: 40, rest: true }, { n: "Squat pulses", r: "12 reps" }, { n: "Single-leg glute bridge (left)", r: "8 reps" }, { n: "Single-leg glute bridge (right)", r: "8 reps" }, { n: "Calf raises", r: "20 reps" }, { n: "Quad + hamstring stretch", t: 60 }] },
+    { id: "hiit12", emoji: "🔥", name: "HIIT starter", cat: "cardio", mins: 12, level: "Beginner+",
+      desc: "30 seconds on, 30 off — scale every move to your pace.",
+      steps: [{ n: "Jumping jacks", t: 30 }, { n: "Rest", t: 30, rest: true }, { n: "Squat to stand", t: 30 }, { n: "Rest", t: 30, rest: true }, { n: "Mountain climbers", t: 30 }, { n: "Rest", t: 30, rest: true }, { n: "March or jog in place", t: 30 }, { n: "Rest", t: 30, rest: true }, { n: "Jumping jacks (round 2)", t: 30 }, { n: "Rest", t: 30, rest: true }, { n: "Mountain climbers (round 2)", t: 30 }, { n: "Cool-down walk in place", t: 90 }] },
+    { id: "sweat20", emoji: "💦", name: "Sweat 20", cat: "cardio", mins: 20, level: "Intermediate",
+      desc: "A bigger cardio circuit for when you want to really move.",
+      steps: [{ n: "Jumping jacks (warm-up)", t: 60 }, { n: "Burpees (step back to scale)", r: "8 reps" }, { n: "Mountain climbers", t: 40 }, { n: "Rest", t: 30, rest: true }, { n: "Squat jumps or fast squats", r: "10 reps" }, { n: "High knees", t: 40 }, { n: "Rest", t: 30, rest: true }, { n: "Burpees (round 2)", r: "8 reps" }, { n: "Plank jacks", t: 30 }, { n: "Rest", t: 30, rest: true }, { n: "High knees (final)", t: 40 }, { n: "Cool-down walk + stretch", t: 90 }] },
+    { id: "lowimpact", emoji: "🤫", name: "Quiet apartment cardio", cat: "cardio", mins: 15, level: "All levels",
+      desc: "No jumping, no noise — downstairs neighbours never know.",
+      steps: [{ n: "March in place", t: 60 }, { n: "Step-out jacks (no jump)", t: 45 }, { n: "Rest", t: 30, rest: true }, { n: "Fast bodyweight squats", r: "12 reps" }, { n: "Standing knee drives", t: 45 }, { n: "Rest", t: 30, rest: true }, { n: "Side steps with arm swings", t: 45 }, { n: "Wall push-ups", r: "12 reps" }, { n: "Standing march (final push)", t: 60 }, { n: "Cool-down stretch", t: 60 }] },
+    { id: "wind", emoji: "🌙", name: "Evening wind-down stretch", cat: "recovery", mins: 10, level: "All levels",
+      desc: "Slow stretches to switch your body into sleep mode.",
+      steps: [{ n: "Neck rolls", t: 40 }, { n: "Cat–cow", t: 45 }, { n: "Child's pose", t: 60 }, { n: "Hamstring stretch (left)", t: 45 }, { n: "Hamstring stretch (right)", t: 45 }, { n: "Hip flexor stretch (left)", t: 45 }, { n: "Hip flexor stretch (right)", t: 45 }, { n: "Lying spinal twist (left)", t: 45 }, { n: "Lying spinal twist (right)", t: 45 }, { n: "Slow breathing, eyes closed", t: 60 }] },
+  ];
+
+  function homeRowHtml(r) {
+    var stepsHtml = r.steps.map(function (s) {
+      return "<li>" + s.n + " — <strong>" + (s.t ? s.t + "s" : s.r) + "</strong></li>";
+    }).join("");
+    return '<details class="topic-row"><summary>' +
+      '<span class="topic-row-emoji" aria-hidden="true">' + r.emoji + "</span>" +
+      '<span class="topic-row-name">' + r.name + "</span>" +
+      '<span class="topic-row-cat">' + r.mins + " min · " + HOME_CATS[r.cat] + "</span>" +
+      '<span class="topic-chevron" aria-hidden="true">▾</span></summary>' +
+      '<div class="topic-body"><p class="routine-meta"><span>⏱ ' + r.mins + " min</span><span>📶 " + r.level + '</span><span>🧰 No equipment</span></p>' +
+      "<p>" + r.desc + "</p><ol>" + stepsHtml + "</ol>" +
+      '<button class="btn btn-small routine-start" type="button" data-routine="' + r.id + '">▶ Start guided workout</button>' +
+      "</div></details>";
+  }
+  var homeListEl = document.getElementById("home-list");
+  if (homeListEl) {
+    buildDirectory({
+      items: HOME_WORKOUTS,
+      listEl: homeListEl,
+      emptyEl: document.getElementById("home-empty"),
+      searchEl: document.getElementById("home-search"),
+      chipsEl: document.getElementById("home-chips"),
+      cats: HOME_CATS,
+      catOf: function (r) { return r.cat; },
+      groupOf: function (r) { return HOME_CATS[r.cat]; },
+      textOf: function (r) { return r.name + " " + r.desc + " " + r.level + " " + HOME_CATS[r.cat]; },
+      rowHtml: homeRowHtml,
+    });
+    homeListEl.addEventListener("click", function (e) {
+      var btn = e.target.closest(".routine-start");
+      if (!btn) return;
+      var r = null;
+      HOME_WORKOUTS.forEach(function (x) { if (x.id === btn.dataset.routine) r = x; });
+      if (r) startWorkout(r);
+    });
+  }
+
+  /* ---- guided player ---- */
+  var playerEl = document.getElementById("player");
+  var playerTitle = document.getElementById("player-title");
+  var playerProgress = document.getElementById("player-progress");
+  var playerMove = document.getElementById("player-move");
+  var playerTimer = document.getElementById("player-timer");
+  var playerPause = document.getElementById("player-pause");
+  var playerNext = document.getElementById("player-next");
+  var playerNextup = document.getElementById("player-nextup");
+  var playerExit = document.getElementById("player-exit");
+  var pw = { routine: null, idx: 0, remaining: 0, interval: null, paused: false };
+
+  function pwStop() {
+    if (pw.interval) { clearInterval(pw.interval); pw.interval = null; }
+  }
+  function startWorkout(r) {
+    pw.routine = r; pw.idx = 0; pw.paused = false;
+    if (playerTitle) playerTitle.textContent = r.emoji + " " + r.name;
+    if (playerEl) playerEl.hidden = false;
+    speak("Starting " + r.name + ". First up: " + r.steps[0].n);
+    runStep();
+  }
+  function runStep() {
+    pwStop();
+    var r = pw.routine;
+    if (!r || pw.idx >= r.steps.length) { finishWorkout(); return; }
+    var s = r.steps[pw.idx];
+    if (playerProgress) playerProgress.textContent = "Move " + (pw.idx + 1) + " of " + r.steps.length;
+    if (playerMove) playerMove.textContent = (s.rest ? "😮‍💨 " : "") + s.n;
+    if (playerNextup) {
+      var nxt = r.steps[pw.idx + 1];
+      playerNextup.textContent = nxt ? "Next: " + nxt.n : "Last one — finish strong!";
+    }
+    if (s.t) {
+      pw.remaining = s.t;
+      playerTimer.classList.remove("rep-mode");
+      playerTimer.textContent = pw.remaining + "s";
+      if (playerPause) playerPause.hidden = false;
+      if (playerNext) playerNext.textContent = "Skip ›";
+      pw.interval = setInterval(function () {
+        if (pw.paused) return;
+        pw.remaining--;
+        playerTimer.textContent = Math.max(0, pw.remaining) + "s";
+        if (pw.remaining <= 0) { pw.idx++; announceNext(); runStep(); }
+      }, 1000);
+    } else {
+      playerTimer.classList.add("rep-mode");
+      playerTimer.textContent = s.r;
+      if (playerPause) playerPause.hidden = true;
+      if (playerNext) playerNext.textContent = "Done ✓";
+    }
+  }
+  function announceNext() {
+    var r = pw.routine;
+    if (r && pw.idx < r.steps.length) speak(r.steps[pw.idx].n);
+  }
+  function finishWorkout() {
+    pwStop();
+    var r = pw.routine;
+    if (playerEl) playerEl.hidden = true;
+    if (!r) return;
+    addEntry("workout", "🏠", "At-home: " + r.name + " (" + r.mins + " min)", r.mins, "min");
+    showToast("🏠", "Workout complete!", r.name + " — " + r.mins + " min logged to your journal. 💪");
+    speak("Workout complete. " + r.name + " logged. Great job!");
+    if (assistantOpen) botSay("🏠 " + r.name + " complete — " + r.mins + " min logged to your journal. Great work! 💪");
+    pw.routine = null;
+  }
+  if (playerNext) playerNext.addEventListener("click", function () {
+    pw.idx++;
+    announceNext();
+    runStep();
+  });
+  if (playerPause) playerPause.addEventListener("click", function () {
+    pw.paused = !pw.paused;
+    playerPause.textContent = pw.paused ? "Resume" : "Pause";
+  });
+  if (playerExit) playerExit.addEventListener("click", function () {
+    pwStop();
+    pw.routine = null;
+    if (playerEl) playerEl.hidden = true;
+  });
 
   /* ===== Newsletter (client-side demo only) ===== */
   var nlForm = document.getElementById("newsletter-form");
