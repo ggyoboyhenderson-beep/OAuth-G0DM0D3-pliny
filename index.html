@@ -43,13 +43,11 @@
         <span></span><span></span><span></span>
       </button>
       <ul class="nav-menu" id="nav-menu">
-        <li><a href="#pillars">Pillars</a></li>
-        <li><a href="#tracker">Habits</a></li>
+        <li><a href="#explore">Explore</a></li>
+        <li><a href="#steps">Steps</a></li>
+        <li><a href="#exercises">Exercises</a></li>
         <li><a href="#topics">Health A–Z</a></li>
-        <li class="nav-adv"><a href="#workout">Workouts</a></li>
-        <li><a href="#journal">Journal</a></li>
-        <li><a href="#trends">Trends</a></li>
-        <li><a href="#bmi">BMI</a></li>
+        <li><a href="#faq">Q&amp;A</a></li>
         <li>
           <button class="view-toggle install-btn" id="install-btn" type="button" hidden>📲 Install</button>
         </li>
@@ -116,6 +114,52 @@
       <strong>Note:</strong> This site is for general education only and is not medical advice.
       Always consult a qualified healthcare professional for personal guidance.
     </div>
+
+    <!-- Explore hub: jump straight to any part of the app -->
+    <section id="explore" class="section">
+      <div class="container">
+        <div class="section-head">
+          <h2>Explore the app</h2>
+          <p>Tap a card to jump straight there — everything's one click away, no endless scrolling.</p>
+        </div>
+        <div class="hub">
+          <div class="hub-group">
+            <h3 class="hub-cat">📊 Track</h3>
+            <div class="hub-tiles">
+              <a class="hub-tile" href="#tracker"><span aria-hidden="true">✅</span>Habits</a>
+              <a class="hub-tile" href="#water"><span aria-hidden="true">💧</span>Water</a>
+              <a class="hub-tile" href="#steps"><span aria-hidden="true">👟</span>Steps</a>
+              <a class="hub-tile" href="#journal"><span aria-hidden="true">📔</span>Journal</a>
+              <a class="hub-tile" href="#trends"><span aria-hidden="true">📈</span>Trends</a>
+            </div>
+          </div>
+          <div class="hub-group">
+            <h3 class="hub-cat">🏋️ Move</h3>
+            <div class="hub-tiles">
+              <a class="hub-tile" href="#beginner"><span aria-hidden="true">🌱</span>Beginner</a>
+              <a class="hub-tile" href="#exercises"><span aria-hidden="true">💪</span>Exercises</a>
+              <a class="hub-tile" href="#workout"><span aria-hidden="true">🗓️</span>Planner</a>
+            </div>
+          </div>
+          <div class="hub-group">
+            <h3 class="hub-cat">🧮 Tools</h3>
+            <div class="hub-tiles">
+              <a class="hub-tile" href="#bmi"><span aria-hidden="true">⚖️</span>BMI</a>
+              <a class="hub-tile" href="#nutrition"><span aria-hidden="true">🍽️</span>Fuel</a>
+              <a class="hub-tile" href="#steps"><span aria-hidden="true">⌚</span>Devices</a>
+            </div>
+          </div>
+          <div class="hub-group">
+            <h3 class="hub-cat">📚 Learn</h3>
+            <div class="hub-tiles">
+              <a class="hub-tile" href="#topics"><span aria-hidden="true">🏥</span>Health A–Z</a>
+              <a class="hub-tile" href="#faq"><span aria-hidden="true">❓</span>Q&amp;A</a>
+              <a class="hub-tile" href="#articles"><span aria-hidden="true">📰</span>Articles</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
 
     <!-- Persona / level selector -->
     <section id="persona" class="persona-band">
@@ -224,6 +268,40 @@
             </div>
             <p class="water-msg" id="water-msg" role="status"></p>
           </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Steps & devices -->
+    <section id="steps" class="section section-alt">
+      <div class="container">
+        <div class="section-head">
+          <h2>Steps &amp; devices</h2>
+          <p>Count steps live with your phone's motion sensor, and connect a Bluetooth heart-rate band or watch.</p>
+        </div>
+        <div class="devices-grid">
+          <div class="card device-card">
+            <h3>👟 Live step counter</h3>
+            <p class="device-sub">Uses your phone's built-in motion sensor while the app is open.</p>
+            <p class="device-big"><span id="live-steps">0</span> <small>steps this session</small></p>
+            <div class="device-actions">
+              <button class="btn" id="steps-start" type="button">Start counting</button>
+              <button class="btn btn-ghost" id="steps-log" type="button" disabled>Log to journal</button>
+            </div>
+            <p class="device-msg" id="steps-msg" role="status"></p>
+          </div>
+          <div class="card device-card">
+            <h3>❤️ Heart-rate device</h3>
+            <p class="device-sub">Pair any strap, band, or watch that supports the standard Bluetooth heart-rate profile.</p>
+            <p class="device-big"><span id="hr-bpm">—</span> <small>bpm</small></p>
+            <div class="device-actions">
+              <button class="btn" id="hr-connect" type="button">Connect device</button>
+            </div>
+            <p class="device-msg" id="hr-msg" role="status"></p>
+          </div>
+        </div>
+        <div class="device-note card" role="note">
+          <strong>About watches &amp; background tracking:</strong> for your privacy, a web app can't count steps while it's closed or read data from Apple Watch, Fitbit, or Garmin — those are closed systems that require a native companion app (Apple HealthKit, Google Fit, or the brand's SDK). What works here today: the <em>live counter</em> above (while the app is open) and any <em>standard Bluetooth heart-rate device</em>. For always-on syncing, keep logging with Vita, or use this alongside your watch's own app.
         </div>
       </div>
     </section>
@@ -347,6 +425,23 @@
           <p><strong>Want the power tools?</strong> The workout planner, fuel calculator, and one-rep max estimator live in Full view — one tap away whenever you're ready.</p>
           <button class="btn btn-small" id="teaser-full" type="button">Switch to Full view</button>
         </div>
+      </div>
+    </section>
+
+    <!-- Exercise library -->
+    <section id="exercises" class="section section-alt">
+      <div class="container">
+        <div class="section-head">
+          <h2>Exercise library</h2>
+          <p>Dozens of exercises with step-by-step how-tos, target muscles, and form tips. Tap any to expand, or search.</p>
+        </div>
+        <div class="topics-controls">
+          <label class="sr-only" for="ex-search">Search exercises</label>
+          <input type="search" id="ex-search" class="topic-search" placeholder="Search: squat, push-up, core, dumbbell…" />
+          <div class="topic-chips" id="ex-chips" role="group" aria-label="Filter by category"></div>
+        </div>
+        <div class="topics-list" id="ex-list"><!-- exercise rows injected by script.js --></div>
+        <p class="topics-empty" id="ex-empty" hidden>No exercises match — try another word, or ask Vita 💬</p>
       </div>
     </section>
 
@@ -520,6 +615,23 @@
         <div class="topics-list" id="topics-grid"><!-- topic rows injected by script.js --></div>
         <p class="topics-empty" id="topics-empty" hidden>No topics match — try a different word, or ask Vita 💬</p>
         <p class="topics-sources">Sources include the WHO · CDC · NIH · APA · American Heart Association · American Academy of Dermatology · American Cancer Society · Sleep Foundation · American Lung Association · Urology Care Foundation · Office on Women's Health · AAFA. Educational only — always see a professional for personal advice.</p>
+      </div>
+    </section>
+
+    <!-- Questions & Answers / FAQ -->
+    <section id="faq" class="section">
+      <div class="container">
+        <div class="section-head">
+          <h2>Questions &amp; answers</h2>
+          <p>The things people most often ask about health, workouts, and this app — answered. Search or filter, and Vita knows these too.</p>
+        </div>
+        <div class="topics-controls">
+          <label class="sr-only" for="faq-search">Search questions</label>
+          <input type="search" id="faq-search" class="topic-search" placeholder="Search: how many reps, lose weight, protein…" />
+          <div class="topic-chips" id="faq-chips" role="group" aria-label="Filter by category"></div>
+        </div>
+        <div class="topics-list" id="faq-list"><!-- Q&A rows injected by script.js --></div>
+        <p class="topics-empty" id="faq-empty" hidden>No questions match — try different words, or just ask Vita 💬</p>
       </div>
     </section>
 

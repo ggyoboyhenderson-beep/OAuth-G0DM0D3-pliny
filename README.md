@@ -35,6 +35,18 @@ A clean, responsive **health & wellness website** — evidence-based guidance pl
   telling Vita `"export my data"`.
 - **Beginner workouts** — a "New to exercise? Start here" guide with a 15-minute
   starter routine, first-timer tips, and eight no-equipment moves explained.
+- **Explore hub** — a category grid at the top (Track / Move / Tools / Learn) that
+  jumps you straight to any section, so the app stays clean and scroll-light.
+- **Steps & devices** — a live step counter using the phone's motion sensor (logs
+  to your journal), plus Bluetooth heart-rate pairing via Web Bluetooth. Clearly
+  notes that background counting and Apple Watch / Fitbit / Garmin sync require a
+  native app (browsers can't do those).
+- **Exercise library** — 30+ exercises across Push / Pull / Legs / Core / Cardio /
+  Mobility / Full-body, each with step-by-step how-tos, target muscles, and form
+  tips. Searchable directory; Vita coaches them too ("how do I do a squat").
+- **Questions & Answers (FAQ)** — 28 common questions on training, nutrition,
+  weight, sleep, mind, and the app, searchable and filterable. Vita answers these
+  in chat as well ("how many reps should I do", "how much protein").
 - **Health A–Z library** — 49 guides in a clean alphabetical directory (slim
   expandable rows, not cards) with live search and filters across 11 categories:
   heart & blood, mind, sleep, bones & muscles, breathing & allergy, digestion &

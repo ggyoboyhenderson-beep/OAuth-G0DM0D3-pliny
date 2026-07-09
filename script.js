@@ -788,6 +788,16 @@
       return "Logged " + lname + " " + lw + " " + lunit + " × " + lreps + ". Estimated 1RM ≈ " + e1 + " " + lunit + ". 💪 Add a little weight when every rep feels solid.";
     }
 
+    // Questions & how-tos run BEFORE the loose loggers, so "how much water
+    // should I drink?" is answered instead of logging a glass. Keys are
+    // specific phrases, so real log commands ("log water") won't match.
+    if (/\bhow\b|\bform\b|\btechnique\b|\bdo a\b|\bdo the\b|\bproper\b|\bdemo\b/.test(low)) {
+      var exH = typeof findExercise === "function" && findExercise(low);
+      if (exH) return exerciseReply(exH);
+    }
+    var fqA = typeof findFaq === "function" && findFaq(low);
+    if (fqA) return fqA.a + "\n(You'll find this and more in the Q&A section.)";
+
     // Weight
     if (/\bweigh|\bweight\b/.test(low)) {
       var w = num(low);
@@ -854,7 +864,7 @@
       return "Logged your meal. 🍽️ Aim for veggies and protein when you can!";
     }
 
-    return "I didn't quite catch that. I can log weight, water, sleep, steps, mood, workouts and meals, or set reminders. Say \"help\" for examples. 🌿";
+    return "I didn't quite catch that. I can log your health, set reminders, explain Health A–Z topics, answer FAQs, or coach exercises. Say \"help\" for examples. 🌿";
   }
 
   function capitalize(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
@@ -1944,6 +1954,377 @@
     if (installBtn) installBtn.hidden = true;
     showToast("🌿", "Installed!", "Vitality Health is now on your home screen.");
   });
+
+  /* =====================================================================
+     Explore hub — jump to any section; unhide advanced ones first
+     ===================================================================== */
+  var ADV_SECTIONS = { workout: 1, nutrition: 1 };
+  document.querySelectorAll(".hub-tile").forEach(function (a) {
+    a.addEventListener("click", function () {
+      var id = (a.getAttribute("href") || "").slice(1);
+      if (ADV_SECTIONS[id] && typeof currentView === "function" &&
+          currentView() === "simple" && typeof setView === "function") {
+        setView("full", true);
+      }
+    });
+  });
+
+  /* =====================================================================
+     Generic expandable directory (shared by Exercises and Q&A)
+     ===================================================================== */
+  function buildDirectory(cfg) {
+    var activeCat = "all";
+    function matches(it, q) {
+      if (activeCat !== "all" && cfg.catOf(it) !== activeCat) return false;
+      if (!q) return true;
+      return cfg.textOf(it).toLowerCase().indexOf(q) !== -1;
+    }
+    function render() {
+      var q = cfg.searchEl ? cfg.searchEl.value.trim().toLowerCase() : "";
+      var shown = cfg.items.filter(function (it) { return matches(it, q); });
+      var html = "", lastG = "";
+      shown.forEach(function (it) {
+        var g = cfg.groupOf ? cfg.groupOf(it) : "";
+        if (g && g !== lastG) { html += '<h3 class="topic-letter">' + g + "</h3>"; lastG = g; }
+        html += cfg.rowHtml(it);
+      });
+      cfg.listEl.innerHTML = html;
+      if (cfg.emptyEl) cfg.emptyEl.hidden = shown.length > 0;
+    }
+    if (cfg.chipsEl) {
+      var cats = [["all", "All"]].concat(Object.keys(cfg.cats).map(function (k) { return [k, cfg.cats[k]]; }));
+      cfg.chipsEl.innerHTML = cats.map(function (c) {
+        return '<button type="button" class="tchip' + (c[0] === "all" ? " active" : "") + '" data-cat="' + c[0] + '">' + c[1] + "</button>";
+      }).join("");
+      cfg.chipsEl.addEventListener("click", function (e) {
+        var chip = e.target.closest(".tchip");
+        if (!chip) return;
+        activeCat = chip.dataset.cat;
+        cfg.chipsEl.querySelectorAll(".tchip").forEach(function (b) { b.classList.toggle("active", b === chip); });
+        render();
+      });
+    }
+    if (cfg.searchEl) cfg.searchEl.addEventListener("input", render);
+    render();
+    return { render: render };
+  }
+
+  /* =====================================================================
+     Exercise library
+     ===================================================================== */
+  var EX_CATS = { push: "Push", pull: "Pull", legs: "Legs", core: "Core", cardio: "Cardio", mobility: "Mobility", full: "Full body" };
+  var EXERCISES = [
+    { emoji: "🤸", name: "Bodyweight squat", cat: "legs", target: "Quads, glutes, core", keys: ["squat", "air squat"],
+      steps: ["Stand feet shoulder-width, toes slightly out", "Push your hips back and bend your knees like sitting into a chair", "Go as low as comfortable with heels flat and chest up", "Drive through your heels to stand tall"], tip: "Knees track over your toes — don't let them cave inward." },
+    { emoji: "🏋️", name: "Goblet squat", cat: "legs", target: "Quads, glutes, core", keys: ["goblet squat", "dumbbell squat"],
+      steps: ["Hold a dumbbell or kettlebell at your chest", "Squat down keeping the weight close and elbows inside your knees", "Keep your chest tall throughout", "Stand back up squeezing your glutes"], tip: "The front weight helps you sit upright and hit depth." },
+    { emoji: "🦵", name: "Walking lunge", cat: "legs", target: "Quads, glutes, hamstrings", keys: ["lunge", "walking lunge"],
+      steps: ["Step forward into a long stride", "Lower until both knees are ~90°", "Push through the front heel to step through", "Alternate legs as you walk forward"], tip: "Keep your torso upright and front knee over your ankle." },
+    { emoji: "🍑", name: "Glute bridge", cat: "legs", target: "Glutes, hamstrings", keys: ["glute bridge", "bridge", "hip raise"],
+      steps: ["Lie on your back, knees bent, feet flat", "Squeeze your glutes and lift your hips", "Form a straight line from knees to shoulders", "Lower with control"], tip: "Push through your heels and avoid arching your lower back." },
+    { emoji: "🏋️", name: "Romanian deadlift", cat: "pull", target: "Hamstrings, glutes, back", keys: ["romanian deadlift", "rdl", "deadlift"],
+      steps: ["Hold weights in front of your thighs", "Soft knees, push hips back and lower the weights down your legs", "Keep your back flat and weights close", "Drive hips forward to stand"], tip: "Feel the stretch in your hamstrings — don't round your back." },
+    { emoji: "🧗", name: "Step-up", cat: "legs", target: "Quads, glutes", keys: ["step up", "step-up"],
+      steps: ["Stand facing a sturdy step or bench", "Place one whole foot on it", "Drive through that heel to stand up on the step", "Step down with control and alternate"], tip: "Let the top leg do the work — don't push off the bottom foot." },
+    { emoji: "💪", name: "Push-up", cat: "push", target: "Chest, shoulders, triceps, core", keys: ["push up", "push-up", "pushup"],
+      steps: ["Hands slightly wider than shoulders, body in a straight line", "Lower your chest toward the floor, elbows ~45°", "Keep your core and glutes tight", "Press back up to full arm extension"], tip: "Too hard? Do them on your knees or against a wall first." },
+    { emoji: "🔺", name: "Incline push-up", cat: "push", target: "Chest, shoulders, triceps", keys: ["incline push up", "wall push up"],
+      steps: ["Place your hands on a bench, table, or wall", "Walk your feet back to a straight-body angle", "Lower your chest to the surface", "Press back up"], tip: "The higher the surface, the easier — lower it as you get stronger." },
+    { emoji: "🎯", name: "Dumbbell bench press", cat: "push", target: "Chest, shoulders, triceps", keys: ["bench press", "dumbbell press", "chest press"],
+      steps: ["Lie on a bench with a dumbbell in each hand at chest level", "Press the weights up until arms are extended", "Lower slowly to a deep stretch", "Keep wrists stacked over elbows"], tip: "Keep your shoulder blades pinched back on the bench." },
+    { emoji: "🙆", name: "Overhead press", cat: "push", target: "Shoulders, triceps, core", keys: ["overhead press", "shoulder press", "ohp", "military press"],
+      steps: ["Hold weights at shoulder height", "Brace your core and press straight overhead", "Lock out with the weights over your mid-foot", "Lower back to your shoulders with control"], tip: "Don't lean back — squeeze your glutes to protect your spine." },
+    { emoji: "🚣", name: "Bent-over row", cat: "pull", target: "Back, biceps, rear delts", keys: ["row", "bent over row", "barbell row", "dumbbell row"],
+      steps: ["Hinge at the hips with a flat back, weights hanging", "Pull the weights to your lower ribs", "Squeeze your shoulder blades together", "Lower under control"], tip: "Lead with your elbows, not your hands." },
+    { emoji: "🧲", name: "Pull-up / assisted", cat: "pull", target: "Back, biceps", keys: ["pull up", "pull-up", "chin up", "lat pulldown"],
+      steps: ["Hang from a bar with hands just wider than shoulders", "Pull your chest toward the bar, driving elbows down", "Chin over the bar if you can", "Lower slowly to a full hang"], tip: "Use a band or the assisted machine to build up — negatives help a lot." },
+    { emoji: "💪", name: "Bicep curl", cat: "pull", target: "Biceps", keys: ["curl", "bicep curl"],
+      steps: ["Hold weights at your sides, palms forward", "Curl up by bending only your elbows", "Squeeze at the top", "Lower slowly all the way down"], tip: "Keep your elbows pinned to your sides — no swinging." },
+    { emoji: "🔙", name: "Face pull", cat: "pull", target: "Rear delts, upper back", keys: ["face pull"],
+      steps: ["Set a band or cable at head height", "Pull toward your face, hands splitting apart", "Aim elbows high and squeeze your upper back", "Return slowly"], tip: "Great for posture and healthy shoulders — go light and controlled." },
+    { emoji: "🧘", name: "Plank", cat: "core", target: "Core, shoulders", keys: ["plank"],
+      steps: ["Forearms on the floor, elbows under shoulders", "Extend your legs to a straight line", "Squeeze glutes and brace your abs", "Hold, breathing steadily"], tip: "Hips level — don't let them sag or pike up." },
+    { emoji: "🚲", name: "Bicycle crunch", cat: "core", target: "Abs, obliques", keys: ["bicycle crunch", "crunch"],
+      steps: ["Lie on your back, hands by your ears", "Bring one knee in and rotate the opposite elbow toward it", "Extend the other leg", "Alternate in a smooth pedaling motion"], tip: "Move slowly and rotate from your ribs, not your neck." },
+    { emoji: "🐞", name: "Dead bug", cat: "core", target: "Deep core", keys: ["dead bug"],
+      steps: ["Lie on your back, arms up, knees bent 90°", "Lower one arm and the opposite leg slowly", "Keep your lower back pressed to the floor", "Return and switch sides"], tip: "If your back arches, don't reach as far." },
+    { emoji: "🌉", name: "Side plank", cat: "core", target: "Obliques, core", keys: ["side plank"],
+      steps: ["Lie on your side, forearm under your shoulder", "Lift your hips into a straight line", "Hold, keeping your body stacked", "Switch sides"], tip: "Drop to your bottom knee to make it easier." },
+    { emoji: "🏃", name: "Brisk walking", cat: "cardio", target: "Heart, legs", keys: ["walk", "walking", "brisk walk"],
+      steps: ["Pick a pace where you can talk but not sing", "Stand tall and swing your arms", "Aim for 20–40 minutes", "Add small hills to raise the intensity"], tip: "The most sustainable cardio there is — consistency wins." },
+    { emoji: "🏃", name: "Running / jogging", cat: "cardio", target: "Heart, legs", keys: ["run", "running", "jog", "jogging"],
+      steps: ["Start with a 5-minute walk to warm up", "Ease into a comfortable jogging pace", "Land softly under your hips, relaxed shoulders", "Cool down with a walk"], tip: "New to it? Alternate 1 min jog / 2 min walk and build up." },
+    { emoji: "🤸", name: "Jumping jacks", cat: "cardio", target: "Full body, heart", keys: ["jumping jack", "star jump"],
+      steps: ["Stand tall, arms at your sides", "Jump feet out while raising your arms overhead", "Jump back to the start", "Keep a steady rhythm"], tip: "Low-impact option: step one foot out at a time." },
+    { emoji: "🔥", name: "Burpee", cat: "cardio", target: "Full body, heart", keys: ["burpee"],
+      steps: ["From standing, squat and place your hands down", "Jump or step your feet back to a plank", "Do a push-up (optional), then jump feet back in", "Explode up into a jump"], tip: "Scale it: skip the push-up and the jump until you build stamina." },
+    { emoji: "⛰️", name: "Mountain climbers", cat: "cardio", target: "Core, shoulders, heart", keys: ["mountain climber"],
+      steps: ["Start in a high plank", "Drive one knee toward your chest", "Quickly switch legs", "Keep your hips low and core tight"], tip: "Speed up for cardio, slow down for core control." },
+    { emoji: "🏋️", name: "Kettlebell swing", cat: "full", target: "Glutes, hamstrings, back, heart", keys: ["kettlebell swing", "swing"],
+      steps: ["Stand with a kettlebell an arm's length in front", "Hinge at the hips and hike it back between your legs", "Snap your hips forward to float it to chest height", "Let it swing back and repeat"], tip: "It's a hip snap, not a squat or an arm lift." },
+    { emoji: "🧎", name: "Bird-dog", cat: "core", target: "Core, back, balance", keys: ["bird dog", "bird-dog"],
+      steps: ["On hands and knees, back flat", "Extend the opposite arm and leg", "Hold a beat, keeping hips level", "Return and switch"], tip: "Imagine balancing a cup of water on your lower back." },
+    { emoji: "🤲", name: "Calf raise", cat: "legs", target: "Calves", keys: ["calf raise"],
+      steps: ["Stand tall, feet hip-width", "Rise onto the balls of your feet", "Pause at the top", "Lower slowly"], tip: "Do them on a step for a bigger stretch and range." },
+    { emoji: "🧎", name: "Hip flexor stretch", cat: "mobility", target: "Hip flexors", keys: ["hip flexor", "lunge stretch"],
+      steps: ["Kneel in a half-lunge, back knee down", "Tuck your pelvis and gently push hips forward", "Feel the stretch in the front of the back hip", "Hold 30 seconds each side"], tip: "Great after long hours of sitting." },
+    { emoji: "🐈", name: "Cat–cow", cat: "mobility", target: "Spine mobility", keys: ["cat cow", "cat-cow"],
+      steps: ["On hands and knees", "Drop your belly and lift your gaze (cow)", "Round your spine and tuck your chin (cat)", "Flow slowly with your breath"], tip: "A gentle wake-up for a stiff back." },
+    { emoji: "🙆", name: "Doorway chest stretch", cat: "mobility", target: "Chest, shoulders", keys: ["chest stretch", "doorway stretch"],
+      steps: ["Place a forearm on a door frame, elbow at shoulder height", "Step through gently until you feel a stretch", "Hold 30 seconds", "Switch sides"], tip: "Counteracts hunching over screens." },
+    { emoji: "🦵", name: "Hamstring stretch", cat: "mobility", target: "Hamstrings", keys: ["hamstring stretch"],
+      steps: ["Sit with one leg extended", "Hinge forward from your hips toward your toes", "Keep your back long, not rounded", "Hold 30 seconds each side"], tip: "Reach with your chest, not your chin." },
+    { emoji: "🧍", name: "Wall sit", cat: "legs", target: "Quads, endurance", keys: ["wall sit"],
+      steps: ["Lean your back flat against a wall", "Slide down until knees are ~90°", "Hold with weight in your heels", "Keep breathing steadily"], tip: "Start with 20–30 seconds and build up." },
+    { emoji: "🍑", name: "Hip thrust", cat: "legs", target: "Glutes", keys: ["hip thrust"],
+      steps: ["Upper back on a bench, weight across your hips", "Drive through your heels to lift your hips", "Squeeze glutes to a flat tabletop", "Lower under control"], tip: "The single best glute builder — squeeze hard at the top." },
+    { emoji: "💪", name: "Tricep dip", cat: "push", target: "Triceps, chest", keys: ["dip", "tricep dip"],
+      steps: ["Hands on a sturdy chair or bench behind you", "Slide your hips off, legs out front", "Bend your elbows to lower straight down", "Press back up"], tip: "Keep elbows pointing back, not flaring out." },
+  ];
+  function findExercise(low) {
+    for (var i = 0; i < EXERCISES.length; i++) {
+      var x = EXERCISES[i];
+      if (low.indexOf(x.name.toLowerCase()) !== -1) return x;
+      for (var k = 0; k < x.keys.length; k++) if (low.indexOf(x.keys[k]) !== -1) return x;
+    }
+    return null;
+  }
+  function exerciseReply(x) {
+    return "🏋️ " + x.name + " — targets " + x.target + ".\n" +
+      x.steps.map(function (s, i) { return (i + 1) + ". " + s; }).join("\n") +
+      "\nTip: " + x.tip + "\n(Full library is in the Exercise library section.)";
+  }
+  function exRowHtml(x) {
+    return '<details class="topic-row"><summary>' +
+      '<span class="topic-row-emoji" aria-hidden="true">' + x.emoji + "</span>" +
+      '<span class="topic-row-name">' + x.name + "</span>" +
+      '<span class="topic-row-cat">' + EX_CATS[x.cat] + "</span>" +
+      '<span class="topic-chevron" aria-hidden="true">▾</span></summary>' +
+      '<div class="topic-body"><p><strong>Targets:</strong> ' + x.target + "</p><ol>" +
+      x.steps.map(function (s) { return "<li>" + s + "</li>"; }).join("") +
+      '</ol><p class="move-tip"><strong>Tip:</strong> ' + x.tip + "</p></div></details>";
+  }
+  if (document.getElementById("ex-list")) {
+    var exSorted = EXERCISES.slice().sort(function (a, b) {
+      return EX_CATS[a.cat].localeCompare(EX_CATS[b.cat]) || a.name.localeCompare(b.name);
+    });
+    buildDirectory({
+      items: exSorted,
+      listEl: document.getElementById("ex-list"),
+      emptyEl: document.getElementById("ex-empty"),
+      searchEl: document.getElementById("ex-search"),
+      chipsEl: document.getElementById("ex-chips"),
+      cats: EX_CATS,
+      catOf: function (x) { return x.cat; },
+      groupOf: function (x) { return EX_CATS[x.cat]; },
+      textOf: function (x) { return x.name + " " + x.keys.join(" ") + " " + x.target; },
+      rowHtml: exRowHtml,
+    });
+  }
+
+  /* =====================================================================
+     Questions & Answers (FAQ)
+     ===================================================================== */
+  var FAQ_CATS = { general: "General", nutrition: "Nutrition", exercise: "Exercise", weight: "Weight", sleep: "Sleep", mind: "Mental health", app: "This app" };
+  var FAQS = [
+    { cat: "general", q: "How much exercise do I actually need?", keys: ["how much exercise", "how much activity", "150 minutes"],
+      a: "For most adults: about 150 minutes of moderate activity (like brisk walking) per week, plus muscle-strengthening on 2+ days. That's ~30 minutes, 5 days a week — and it can be broken into short chunks. Any movement beats none." },
+    { cat: "general", q: "Is it better to work out in the morning or evening?", keys: ["morning or evening", "best time to work out", "best time to exercise"],
+      a: "The best time is whenever you'll actually do it consistently. Morning workouts build routine and are rarely 'cancelled' by the day; evening sessions may feel stronger since your body is warm. Pick what fits your life." },
+    { cat: "general", q: "How long until I see results?", keys: ["see results", "how long results", "when will i see"],
+      a: "Energy, mood, and sleep often improve within 1–2 weeks. Strength gains show in 4–6 weeks. Visible body changes usually take 8–12 weeks of consistency. Track habits, not just the mirror." },
+    { cat: "exercise", q: "How many sets and reps should I do?", keys: ["how many reps", "how many sets", "sets and reps"],
+      a: "General strength: 3–4 sets of 6–12 reps. Endurance: 2–3 sets of 12–20. Beginners do great with 2–3 sets of 8–12, stopping 1–2 reps short of failure. Add a little weight or a rep when it feels easy." },
+    { cat: "exercise", q: "How much rest between sets?", keys: ["rest between sets", "how long rest", "rest time"],
+      a: "Roughly 30–60 seconds for endurance/toning, 1–2 minutes for general strength, and 2–3 minutes for heavy lifts. Rest enough that your form stays clean on the next set." },
+    { cat: "exercise", q: "Should I do cardio or weights first?", keys: ["cardio or weights", "cardio before weights", "cardio first"],
+      a: "Do whichever matches your main goal first, while you're fresh. Strength goal → lift first. Endurance goal → cardio first. A short 5–10 minute cardio warm-up before lifting is always fine." },
+    { cat: "exercise", q: "How many rest days do I need?", keys: ["rest days", "how many rest days", "recovery days"],
+      a: "Most people do well with 1–3 rest days a week, and shouldn't train the same muscle hard two days in a row. Muscles grow during recovery, not during the workout. Light walking on rest days is great." },
+    { cat: "exercise", q: "Why am I sore after working out?", keys: ["sore", "doms", "muscle soreness", "why am i sore"],
+      a: "That's DOMS (delayed-onset muscle soreness), a normal response to new or harder training that peaks 24–48h later. Gentle movement, hydration, and sleep help. Sharp or joint pain is different — back off and check it." },
+    { cat: "exercise", q: "Can I build muscle with just bodyweight?", keys: ["bodyweight build muscle", "no equipment muscle", "calisthenics"],
+      a: "Yes — especially as a beginner. Progress by doing harder variations, more reps, slower tempos, and shorter rest. Eventually adding external weight helps continue progress, but you can get strong with bodyweight alone." },
+    { cat: "exercise", q: "Do I need to lift heavy to get toned?", keys: ["get toned", "lift heavy", "tone up", "toning"],
+      a: "'Toned' just means muscle + lower body fat. You build muscle with challenging resistance (any load that's hard for your rep range) and reveal it by managing nutrition. Light weights for endless reps do less than moderate, challenging sets." },
+    { cat: "weight", q: "What's the best way to lose weight?", keys: ["lose weight", "weight loss", "best way to lose"],
+      a: "A modest, sustainable calorie deficit — mostly from whole foods with plenty of protein and vegetables — combined with strength training (to keep muscle) and daily steps. Aim for ~0.5–1% of body weight per week. Consistency beats extremes." },
+    { cat: "weight", q: "How much protein should I eat?", keys: ["how much protein", "protein intake", "grams of protein"],
+      a: "A common range is about 1.6–2.2 g per kg of body weight per day when you're active or trying to lose fat while keeping muscle. Spread it across meals. The Fuel calculator in this app estimates a target for you." },
+    { cat: "weight", q: "Are carbs bad for me?", keys: ["carbs bad", "are carbs", "low carb"],
+      a: "No — carbs are your body's main fuel, especially for exercise. Favor whole sources (oats, rice, potatoes, fruit, beans) over heavily processed ones. What matters most is your overall calories and food quality, not cutting a whole macro." },
+    { cat: "weight", q: "Can I target fat loss on my belly?", keys: ["spot reduce", "belly fat", "target fat", "lose belly"],
+      a: "Spot reduction isn't a thing — you can't choose where fat comes off. Fat loss happens body-wide through an overall calorie deficit. Core exercises strengthen the muscles underneath, but the fat on top comes off with your whole body." },
+    { cat: "nutrition", q: "How much water should I drink?", keys: ["how much water", "water intake", "hydration"],
+      a: "A common guide is ~2 litres (about 8 glasses) a day, but needs vary with size, heat, and activity. Check your urine — pale yellow is well-hydrated. Thirst, dark urine, or headaches are signs to drink more." },
+    { cat: "nutrition", q: "Do I need supplements or protein powder?", keys: ["supplements", "protein powder", "do i need supplements"],
+      a: "Food first — most people can hit their needs with whole foods. Protein powder is just a convenient way to reach a protein target, not magic. Creatine and vitamin D are among the few with strong evidence; check with a professional for your situation." },
+    { cat: "nutrition", q: "Should I eat before or after a workout?", keys: ["eat before workout", "eat after workout", "pre workout meal", "post workout"],
+      a: "A small carb+protein snack 1–2 hours before can help energy; a meal with protein within a few hours after supports recovery. The exact timing matters far less than your total daily food. Train in whatever state feels good to you." },
+    { cat: "sleep", q: "How many hours of sleep do I need?", keys: ["how much sleep", "hours of sleep", "sleep need"],
+      a: "Most adults need 7–9 hours. Consistency matters as much as quantity — a steady sleep and wake time, a dark cool room, and no screens in the last hour make the biggest difference." },
+    { cat: "sleep", q: "Why can't I fall asleep?", keys: ["can't sleep", "cant fall asleep", "insomnia", "trouble sleeping"],
+      a: "Common culprits: caffeine late in the day, screens and bright light at night, irregular schedule, stress, and alcohol. Keep a wind-down routine, get morning daylight, and if it persists for weeks, talk to a doctor about it." },
+    { cat: "mind", q: "How do I stay motivated?", keys: ["stay motivated", "motivation", "lose motivation"],
+      a: "Motivation follows action more than it precedes it. Make it easy: tiny goals, a set time, lay out your gear, and track streaks (the habit tracker here helps). Focus on showing up, not on feeling inspired." },
+    { cat: "mind", q: "How can I manage stress?", keys: ["manage stress", "reduce stress", "stressed"],
+      a: "Movement, daylight, connection with people, and slow breathing all genuinely lower stress. Short breaks, protecting sleep, and limiting doom-scrolling help too. If stress is constant or overwhelming, talking to a professional is a strength, not a weakness." },
+    { cat: "general", q: "Is it safe to work out every day?", keys: ["work out every day", "exercise every day", "train daily"],
+      a: "Light daily activity (walking, mobility, easy cycling) is great. Hard training every day without recovery leads to burnout and injury. Alternate hard and easy days, or rotate muscle groups, and take at least one easier day a week." },
+    { cat: "general", q: "When should I see a doctor before exercising?", keys: ["doctor before exercise", "safe to exercise", "medical clearance"],
+      a: "Check with a professional first if you have heart/lung conditions, chest pain, dizziness, are pregnant, are recovering from injury or surgery, or have been inactive with other risk factors. When in doubt, get cleared — then start gradually." },
+    { cat: "app", q: "Is my data private?", keys: ["is my data private", "privacy", "data stored", "where is my data"],
+      a: "Yes. Everything you log stays in your browser's local storage on your device — there's no account, no server, and no tracking. Clearing your browser data or using the Clear buttons removes it. Use 'Export my data' to save a CSV backup." },
+    { cat: "app", q: "Does the app work offline?", keys: ["work offline", "offline", "no internet"],
+      a: "Yes — once loaded, it's installed as an app with a service worker that caches everything, so the trackers, Vita, exercises, and Health A–Z all work with no connection." },
+    { cat: "app", q: "Can it sync with my Apple Watch, Fitbit, or Garmin?", keys: ["apple watch", "fitbit", "garmin", "sync watch", "smartwatch"],
+      a: "Not directly — those are closed systems that only share data with native apps (via Apple HealthKit, Google Fit, or the brand's SDK). This web app can count steps live while it's open (Steps section) and connect standard Bluetooth heart-rate devices, but it can't read your watch's stored data or track in the background." },
+    { cat: "app", q: "How do I count steps in the background?", keys: ["count steps background", "background steps", "steps when closed", "pedometer"],
+      a: "For privacy, browsers don't let a web app track steps while it's closed. Use the live step counter in the Steps section while the app is open, then tap 'Log to journal'. True always-on step counting needs your phone's native health app or a wearable." },
+    { cat: "app", q: "How do I ask Vita something?", keys: ["how to use vita", "ask vita", "what can vita do"],
+      a: "Tap the 💬 button. Vita understands plain language — log health ('log water', 'slept 7 hours'), set reminders, explain Health A–Z topics, answer these FAQs, and coach exercises ('how do I do a squat'). Say 'help' for the full list." },
+  ];
+  function findFaq(low) {
+    for (var i = 0; i < FAQS.length; i++) {
+      var f = FAQS[i];
+      for (var k = 0; k < f.keys.length; k++) if (low.indexOf(f.keys[k]) !== -1) return f;
+    }
+    return null;
+  }
+  function faqRowHtml(f) {
+    return '<details class="topic-row"><summary>' +
+      '<span class="topic-row-emoji" aria-hidden="true">❓</span>' +
+      '<span class="topic-row-name">' + f.q + "</span>" +
+      '<span class="topic-row-cat">' + FAQ_CATS[f.cat] + "</span>" +
+      '<span class="topic-chevron" aria-hidden="true">▾</span></summary>' +
+      '<div class="topic-body"><p>' + f.a + "</p></div></details>";
+  }
+  if (document.getElementById("faq-list")) {
+    var faqSorted = FAQS.slice().sort(function (a, b) {
+      return FAQ_CATS[a.cat].localeCompare(FAQ_CATS[b.cat]);
+    });
+    buildDirectory({
+      items: faqSorted,
+      listEl: document.getElementById("faq-list"),
+      emptyEl: document.getElementById("faq-empty"),
+      searchEl: document.getElementById("faq-search"),
+      chipsEl: document.getElementById("faq-chips"),
+      cats: FAQ_CATS,
+      catOf: function (f) { return f.cat; },
+      groupOf: function (f) { return FAQ_CATS[f.cat]; },
+      textOf: function (f) { return f.q + " " + f.keys.join(" ") + " " + f.a; },
+      rowHtml: faqRowHtml,
+    });
+  }
+
+  /* =====================================================================
+     Live step counter (accelerometer, while the app is open)
+     ===================================================================== */
+  var stepsStartBtn = document.getElementById("steps-start");
+  var stepsLogBtn = document.getElementById("steps-log");
+  var liveStepsEl = document.getElementById("live-steps");
+  var stepsMsg = document.getElementById("steps-msg");
+  var liveSteps = 0, stepCounting = false, stepBaseline = 0, lastStepAt = 0;
+
+  function onMotion(e) {
+    var a = e.accelerationIncludingGravity || e.acceleration;
+    if (!a) return;
+    var mag = Math.sqrt((a.x || 0) * (a.x || 0) + (a.y || 0) * (a.y || 0) + (a.z || 0) * (a.z || 0));
+    stepBaseline = stepBaseline ? stepBaseline * 0.95 + mag * 0.05 : mag;
+    var dev = mag - stepBaseline;
+    var now = Date.now();
+    if (dev > 2.5 && (now - lastStepAt) > 300) {
+      lastStepAt = now;
+      liveSteps++;
+      if (liveStepsEl) liveStepsEl.textContent = liveSteps.toLocaleString();
+      if (stepsLogBtn) stepsLogBtn.disabled = false;
+    }
+  }
+  function stopSteps() {
+    stepCounting = false;
+    window.removeEventListener("devicemotion", onMotion);
+    if (stepsStartBtn) stepsStartBtn.textContent = "Start counting";
+    if (stepsMsg) stepsMsg.textContent = liveSteps ? "Paused at " + liveSteps.toLocaleString() + " steps — log them below." : "Stopped.";
+  }
+  function beginSteps() {
+    stepCounting = true;
+    stepBaseline = 0;
+    window.addEventListener("devicemotion", onMotion);
+    if (stepsStartBtn) stepsStartBtn.textContent = "Stop";
+    if (stepsMsg) stepsMsg.textContent = "Counting… keep the app open and your phone with you. 👟";
+  }
+  if (stepsStartBtn) {
+    stepsStartBtn.addEventListener("click", function () {
+      if (stepCounting) { stopSteps(); return; }
+      if (typeof DeviceMotionEvent === "undefined") {
+        stepsMsg.textContent = "This device/browser doesn't share motion data — log steps with Vita instead.";
+        return;
+      }
+      if (typeof DeviceMotionEvent.requestPermission === "function") {
+        DeviceMotionEvent.requestPermission().then(function (state) {
+          if (state === "granted") beginSteps();
+          else stepsMsg.textContent = "Motion access was denied. Enable it in settings, or log steps with Vita.";
+        }).catch(function () { stepsMsg.textContent = "Couldn't access the motion sensor."; });
+      } else {
+        beginSteps();
+      }
+    });
+  }
+  if (stepsLogBtn) {
+    stepsLogBtn.addEventListener("click", function () {
+      if (!liveSteps) return;
+      addEntry("steps", "👟", liveSteps.toLocaleString() + " steps", liveSteps, "steps");
+      if (stepsMsg) stepsMsg.textContent = "Logged " + liveSteps.toLocaleString() + " steps to your journal. 👟";
+      liveSteps = 0;
+      if (liveStepsEl) liveStepsEl.textContent = "0";
+      stepsLogBtn.disabled = true;
+    });
+  }
+
+  /* =====================================================================
+     Heart-rate device via Web Bluetooth (standard HR profile)
+     ===================================================================== */
+  var hrConnectBtn = document.getElementById("hr-connect");
+  var hrBpmEl = document.getElementById("hr-bpm");
+  var hrMsg = document.getElementById("hr-msg");
+  if (hrConnectBtn) {
+    if (!(navigator.bluetooth && navigator.bluetooth.requestDevice)) {
+      hrMsg.textContent = "Web Bluetooth isn't available here — try Chrome or Edge on Android or desktop.";
+      hrConnectBtn.disabled = true;
+    } else {
+      hrConnectBtn.addEventListener("click", function () {
+        hrMsg.textContent = "Choose your heart-rate device…";
+        navigator.bluetooth.requestDevice({ filters: [{ services: ["heart_rate"] }] })
+          .then(function (device) {
+            hrMsg.textContent = "Connecting to " + (device.name || "device") + "…";
+            device.addEventListener("gattserverdisconnected", function () {
+              hrMsg.textContent = "Device disconnected.";
+              hrBpmEl.textContent = "—";
+            });
+            return device.gatt.connect().then(function (server) {
+              return server.getPrimaryService("heart_rate");
+            }).then(function (service) {
+              return service.getCharacteristic("heart_rate_measurement");
+            }).then(function (ch) {
+              return ch.startNotifications();
+            }).then(function (ch) {
+              ch.addEventListener("characteristicvaluechanged", function (ev) {
+                var dv = ev.target.value;
+                var flags = dv.getUint8(0);
+                var bpm = (flags & 1) ? dv.getUint16(1, true) : dv.getUint8(1);
+                hrBpmEl.textContent = bpm;
+              });
+              hrMsg.textContent = "Connected " + (device.name ? "to " + device.name + " " : "") + "❤️ live bpm below.";
+            });
+          })
+          .catch(function (err) {
+            hrMsg.textContent = (err && err.name === "NotFoundError")
+              ? "No device selected."
+              : "Couldn't connect — make sure the device is on, unpaired from other apps, and nearby.";
+          });
+      });
+    }
+  }
 
   /* ===== Newsletter (client-side demo only) ===== */
   var nlForm = document.getElementById("newsletter-form");
