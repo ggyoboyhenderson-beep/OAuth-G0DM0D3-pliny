@@ -1,5 +1,5 @@
 /* Vitality Health — service worker: offline-first app shell */
-var CACHE = "vitality-v3";
+var CACHE = "vitality-v4";
 var SHELL = [
   "./",
   "./index.html",

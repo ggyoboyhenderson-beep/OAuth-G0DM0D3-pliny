@@ -250,6 +250,7 @@
     waterCount = Math.min(WATER_GOAL, Math.max(0, n));
     saveWater();
     renderWater();
+    document.dispatchEvent(new CustomEvent("vh:water-changed"));
   }
   if (waterWrap) {
     if (waterGoalEl) waterGoalEl.textContent = WATER_GOAL;
@@ -712,7 +713,9 @@
         "• \"log workout 30 min run\"\n• \"log bench 80kg x 5\" (I'll estimate your 1RM)\n" +
         "• \"remind me to stretch in 30 minutes\"\n" +
         "• \"tell me about blood pressure\" (or any Health A–Z topic)\n" +
-        "• \"summary\" for today's recap\n• \"export my data\" for a CSV download.";
+        "• \"my name is Sam\" / \"set step goal 10000\"\n" +
+        "• \"summary\" for today · \"weekly recap\" for your week\n" +
+        "• \"export my data\" for a CSV download.";
     }
 
     // Greetings / thanks
@@ -720,6 +723,30 @@
       return "Hi! 🌿 I'm Vita. Tell me how you're doing — e.g. \"log water\" or \"slept 8 hours\". Say \"help\" for ideas.";
     if (/\b(thanks|thank you|cheers|ty)\b/.test(low))
       return "Anytime! Keep up the great work. 💚";
+
+    // Profile: name, goals, and "who am I"
+    var nameMatch = /\b(?:my name is|call me|i am called|i'?m called)\s+([a-z][a-z'-]*)/i.exec(text);
+    if (nameMatch) {
+      var newName = nameMatch[1].charAt(0).toUpperCase() + nameMatch[1].slice(1);
+      saveProfile({ name: newName });
+      return "Nice to meet you, " + newName + "! 🌿 I'll remember that — everything here is stored only on your device. Fill in Your Profile for even better personalization.";
+    }
+    var goalMatch = /\bset (?:my )?(step|steps|sleep) goal (?:to )?(\d+(?:\.\d+)?)/i.exec(low);
+    if (goalMatch) {
+      var gKind = goalMatch[1].indexOf("step") === 0 ? "stepGoal" : "sleepGoal";
+      var gVal = parseFloat(goalMatch[2]);
+      var upd = {}; upd[gKind] = gVal;
+      saveProfile(upd);
+      return "Done — your " + (gKind === "stepGoal" ? "daily step goal is now " + gVal.toLocaleString() + " steps" : "sleep goal is now " + gVal + " hours") + ". I'll track your streaks against it. 🎯";
+    }
+    if (/\bwho am i\b|\bmy profile\b/.test(low)) {
+      return profileSummary();
+    }
+
+    // Weekly recap — must run before the daily summary branch
+    if (/\bweek(?:ly)?\b/.test(low) && /\b(recap|summary|review|report)\b/.test(low) || /\bhow was my week\b|\bmy week\b/.test(low)) {
+      return weeklyRecap();
+    }
 
     // Health A–Z lookups ("tell me about blood pressure") — only replies
     // when a known topic matches, so other commands fall through untouched.
@@ -811,6 +838,7 @@
         : /\b(kg|kilo)/.test(low) ? "kg"
         : currentWUnit();
       addEntry("weight", "⚖️", "Weight: " + w + " " + unit, w, unit);
+      updateProfileWeight(unit === "lb" ? w * 0.453592 : w); // keep the profile current
       return "Logged your weight: " + w + " " + unit + ". ⚖️";
     }
 
@@ -900,7 +928,7 @@
   }
   function botSay(text) { renderMsg(text, "bot"); pushMsg(text, "bot"); }
 
-  var CHIPS = ["Log water", "Summary", "Log bench 60kg x 5", "Remind me to stretch in 30 minutes", "Export my data", "Help"];
+  var CHIPS = ["Log water", "Summary", "Weekly recap", "Log bench 60kg x 5", "Remind me to stretch in 30 minutes", "Help"];
   function renderChips() {
     if (!chipsEl) return;
     chipsEl.innerHTML = "";
@@ -1461,8 +1489,10 @@
     var hr = new Date().getHours();
     var partOfDay = hr < 12 ? "Good morning" : hr < 18 ? "Good afternoon" : "Good evening";
     var s = snapshot();
-    var lines = [partOfDay + ". Vita online and at your service. 🌿"];
+    var pname = profileName();
+    var lines = [partOfDay + (pname ? ", " + pname : "") + ". Vita online and at your service. 🌿"];
     var insights = [];
+    if (new Date().getDay() === 1) insights.push("It's Monday — say \"weekly recap\" for your week in review.");
     if (s.water < 8) insights.push("You're at " + s.water + "/8 glasses of water — say \"log water\" and I'll track it.");
     if (!s.sleep) insights.push("You haven't logged sleep yet — how did you rest?");
     if (!s.steps) insights.push("No steps logged today — even a short walk counts.");
@@ -2482,6 +2512,267 @@
     setTimeout(function () { syncHealth(false); }, 1500); // auto-sync on open
     document.addEventListener("resume", function () { syncHealth(false); }); // Capacitor app resume
   }
+
+  /* =====================================================================
+     Personal profile — everything compiled to this exact person, stored
+     only in this device's localStorage (no account, no server).
+     ===================================================================== */
+  var PROFILE_KEY = "vh-profile";
+  var profile = {};
+  try { profile = JSON.parse(localStorage.getItem(PROFILE_KEY) || "{}") || {}; } catch (e) { profile = {}; }
+
+  function profileName() { return profile.name || ""; }
+  function stepGoal() { return profile.stepGoal > 0 ? profile.stepGoal : 8000; }
+  function sleepGoal() { return profile.sleepGoal > 0 ? profile.sleepGoal : 8; }
+
+  function saveProfile(patch) {
+    for (var k in patch) {
+      if (patch[k] === "" || patch[k] == null || (typeof patch[k] === "number" && isNaN(patch[k]))) delete profile[k];
+      else profile[k] = patch[k];
+    }
+    try { localStorage.setItem(PROFILE_KEY, JSON.stringify(profile)); } catch (e) {}
+    applyProfileEverywhere();
+  }
+  function updateProfileWeight(kg) {
+    if (!(kg > 0)) return;
+    profile.weightKg = Math.round(kg * 10) / 10;
+    try { localStorage.setItem(PROFILE_KEY, JSON.stringify(profile)); } catch (e) {}
+    fillProfileForm();
+    prefillCalculators();
+  }
+  function profileSummary() {
+    if (!profile.name && !profile.weightKg && !profile.heightCm) {
+      return "I don't know you yet! Fill in Your Profile (👤 in the Explore hub) or tell me \"my name is …\" — everything stays on your device.";
+    }
+    var bits = [];
+    if (profile.name) bits.push("You're " + profile.name);
+    if (profile.age) bits.push(profile.age + " years old");
+    if (profile.heightCm) bits.push(profile.heightCm + " cm");
+    if (profile.weightKg) bits.push(prefWeight(profile.weightKg, "kg") + " " + currentWUnit());
+    var line = bits.join(", ") + ".";
+    line += "\n🎯 Goals: " + stepGoal().toLocaleString() + " steps/day, " + sleepGoal() + " h sleep.";
+    line += "\n🔒 All of this lives only on this device.";
+    return line;
+  }
+
+  /* ---- profile form ---- */
+  var pfForm = document.getElementById("profile-form");
+  var pfMsg = document.getElementById("pf-msg");
+  function fillProfileForm() {
+    if (!pfForm) return;
+    document.getElementById("pf-name").value = profile.name || "";
+    document.getElementById("pf-age").value = profile.age || "";
+    document.getElementById("pf-sex").value = profile.sex || "";
+    document.getElementById("pf-height").value = profile.heightCm || "";
+    var wl = document.getElementById("pf-weight-label");
+    if (wl) wl.textContent = "Weight (" + currentWUnit() + ")";
+    document.getElementById("pf-weight").value = profile.weightKg ? prefWeight(profile.weightKg, "kg") : "";
+    document.getElementById("pf-steps").value = profile.stepGoal || "";
+    document.getElementById("pf-sleep").value = profile.sleepGoal || "";
+  }
+  function prefillCalculators() {
+    var imperial = currentWUnit() === "lb";
+    var h = profile.heightCm ? (imperial ? Math.round(profile.heightCm / 2.54) : profile.heightCm) : "";
+    var w = profile.weightKg ? prefWeight(profile.weightKg, "kg") : "";
+    ["height", "m-height"].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el && h && !el.value) el.value = h;
+    });
+    ["weight", "m-weight"].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el && w && !el.value) el.value = w;
+    });
+    var age = document.getElementById("m-age");
+    if (age && profile.age && !age.value) age.value = profile.age;
+    var sex = document.getElementById("m-sex");
+    if (sex && profile.sex) sex.value = profile.sex;
+  }
+  function applyProfileEverywhere() {
+    var title = document.getElementById("journal-title");
+    if (title) title.textContent = profile.name ? profile.name + "'s health journal" : "Your health journal";
+    fillProfileForm();
+    prefillCalculators();
+    renderStreaks();
+  }
+  if (pfForm) {
+    pfForm.addEventListener("submit", function (e) {
+      e.preventDefault();
+      var wRaw = parseFloat(document.getElementById("pf-weight").value);
+      var kg = wRaw > 0 ? (currentWUnit() === "lb" ? wRaw * 0.453592 : wRaw) : null;
+      saveProfile({
+        name: (document.getElementById("pf-name").value || "").trim(),
+        age: parseInt(document.getElementById("pf-age").value, 10) || null,
+        sex: document.getElementById("pf-sex").value || "",
+        heightCm: parseFloat(document.getElementById("pf-height").value) || null,
+        weightKg: kg ? Math.round(kg * 10) / 10 : null,
+        stepGoal: parseInt(document.getElementById("pf-steps").value, 10) || null,
+        sleepGoal: parseFloat(document.getElementById("pf-sleep").value) || null,
+      });
+      if (pfMsg) pfMsg.textContent = "Saved" + (profile.name ? ", " + profile.name : "") + " — stored only on this device. 🔒";
+      showToast("👤", "Profile saved", "Vita and your tools are now personalized to you.");
+    });
+  }
+  if (wunitBtn) wunitBtn.addEventListener("click", function () {
+    setTimeout(fillProfileForm, 0); // relabel + convert the profile weight field
+  });
+
+  /* =====================================================================
+     Goal streaks — consecutive days meeting your step & water goals
+     ===================================================================== */
+  var streaksEl = document.getElementById("streaks");
+
+  function dayKeyOffset(n) {
+    var d = new Date();
+    d.setDate(d.getDate() - n);
+    return d.toISOString().slice(0, 10);
+  }
+  function dayTotals(dk) {
+    var t = { steps: 0, water: 0, workouts: 0, sleep: null };
+    journal.forEach(function (e) {
+      if (new Date(e.ts).toISOString().slice(0, 10) !== dk) return;
+      if (e.type === "steps") t.steps = Math.max(t.steps, e.value || 0);
+      else if (e.type === "water") t.water += e.value || 1;
+      else if (e.type === "workout") t.workouts++;
+      else if (e.type === "sleep") t.sleep = e.value;
+    });
+    if (dk === todayKey()) t.water = Math.max(t.water, waterCount || 0);
+    return t;
+  }
+  function dayMet(dk, kind) {
+    var t = dayTotals(dk);
+    if (kind === "steps") return t.steps >= stepGoal();
+    if (kind === "water") return t.water >= WATER_GOAL;
+    return false;
+  }
+  function computeStreak(kind) {
+    var c = 0;
+    var start = dayMet(dayKeyOffset(0), kind) ? 0 : 1; // an unfinished today doesn't break it
+    for (var i = start; i < 366; i++) {
+      if (dayMet(dayKeyOffset(i), kind)) c++;
+      else break;
+    }
+    return c;
+  }
+  function workoutsThisWeek() {
+    var n = 0;
+    for (var i = 0; i < 7; i++) n += dayTotals(dayKeyOffset(i)).workouts;
+    return n;
+  }
+  function renderStreaks() {
+    if (!streaksEl) return;
+    var ss = computeStreak("steps"), ws = computeStreak("water"), ww = workoutsThisWeek();
+    var stepsToday = dayMet(todayKey(), "steps"), waterToday = dayMet(todayKey(), "water");
+    function tile(emoji, value, label, hit) {
+      return '<div class="stat-tile' + (hit ? " streak-hit" : "") + '"><span class="stat-emoji">' + emoji +
+        '</span><span class="stat-value">' + value + '</span><span class="stat-label">' + label + "</span></div>";
+    }
+    streaksEl.innerHTML =
+      tile("🔥", ss + "<small> day" + (ss === 1 ? "" : "s") + "</small>", "Step streak · goal " + stepGoal().toLocaleString(), stepsToday) +
+      tile("💧", ws + "<small> day" + (ws === 1 ? "" : "s") + "</small>", "Water streak · goal " + WATER_GOAL, waterToday) +
+      tile("🏋️", String(ww), "Workouts this week", ww >= 3);
+  }
+  function checkCelebrations() {
+    [["steps", "🔥", "Step goal hit!", function () { return "You reached " + stepGoal().toLocaleString() + " steps — " + computeStreak("steps") + "-day streak!"; }],
+     ["water", "💧", "Water goal hit!", function () { return WATER_GOAL + " glasses today — " + computeStreak("water") + "-day streak!"; }]
+    ].forEach(function (g) {
+      var kind = g[0], flag = "vh-cele-" + kind + "-" + todayKey();
+      var done = false;
+      try { done = localStorage.getItem(flag) === "1"; } catch (e) {}
+      if (!done && dayMet(todayKey(), kind)) {
+        try { localStorage.setItem(flag, "1"); } catch (e) {}
+        var body = g[3]();
+        showToast(g[1], g[2], body);
+        if (assistantOpen) { botSay(g[1] + " " + g[2] + " " + body); speak(g[2] + " " + body); }
+      }
+    });
+  }
+  document.addEventListener("vh:journal-changed", function () { renderStreaks(); checkCelebrations(); renderHistory(); });
+  document.addEventListener("vh:water-changed", function () { renderStreaks(); checkCelebrations(); });
+
+  /* =====================================================================
+     Weekly recap
+     ===================================================================== */
+  var WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  function weeklyRecap() {
+    var days = [];
+    for (var i = 6; i >= 0; i--) days.push(dayKeyOffset(i));
+    var stepVals = [], sleepVals = [], waterVals = [], moodScores = [], workoutTotal = 0;
+    var bestSleep = null, weights = [];
+    days.forEach(function (dk) {
+      var t = dayTotals(dk);
+      if (t.steps > 0) stepVals.push(t.steps);
+      if (t.water > 0) waterVals.push(t.water);
+      if (t.sleep != null) {
+        sleepVals.push(t.sleep);
+        if (!bestSleep || t.sleep > bestSleep.h) bestSleep = { h: t.sleep, day: WEEKDAYS[new Date(dk + "T12:00:00").getDay()] };
+      }
+      workoutTotal += t.workouts;
+    });
+    journal.forEach(function (e) {
+      var dk = new Date(e.ts).toISOString().slice(0, 10);
+      if (days.indexOf(dk) === -1) return;
+      if (e.type === "mood" && e.score != null) moodScores.push(e.score);
+      if (e.type === "weight" && e.value != null) weights.push({ ts: e.ts, kg: e.unit === "lb" ? e.value * 0.453592 : e.value });
+    });
+    var daysLogged = stepVals.length || sleepVals.length || waterVals.length || workoutTotal;
+    if (!daysLogged) {
+      return "Not much logged this week yet — give me a few days of data and I'll have a proper recap for you. Try \"log water\" or sync your watch! 🌿";
+    }
+    function avg(a) { return a.length ? a.reduce(function (s, v) { return s + v; }, 0) / a.length : 0; }
+    var pname = profileName();
+    var lines = ["📅 Your week" + (pname ? ", " + pname : "") + ":"];
+    if (stepVals.length) {
+      var sAvg = Math.round(avg(stepVals));
+      lines.push("👟 Steps: avg " + sAvg.toLocaleString() + "/day across " + stepVals.length + " day" + (stepVals.length === 1 ? "" : "s") +
+        (sAvg >= stepGoal() ? " — above your goal! 🔥" : " (goal: " + stepGoal().toLocaleString() + ")"));
+    }
+    if (workoutTotal) lines.push("🏋️ Workouts: " + workoutTotal + " this week" + (workoutTotal >= 3 ? " — strong! 💪" : ""));
+    if (sleepVals.length) {
+      lines.push("😴 Sleep: avg " + (Math.round(avg(sleepVals) * 10) / 10) + " h" +
+        (bestSleep ? " — best was " + bestSleep.h + " h on " + bestSleep.day : ""));
+    }
+    if (waterVals.length) lines.push("💧 Water: avg " + (Math.round(avg(waterVals) * 10) / 10) + " glasses/day");
+    if (moodScores.length) {
+      var m = avg(moodScores);
+      lines.push((m >= 4 ? "😄" : m >= 3 ? "🙂" : "😔") + " Mood: " + (m >= 4 ? "mostly great" : m >= 3 ? "steady" : "a rough one — be kind to yourself"));
+    }
+    if (weights.length >= 2) {
+      weights.sort(function (a, b) { return a.ts - b.ts; });
+      var dw = weights[weights.length - 1].kg - weights[0].kg;
+      var dwPref = Math.abs(Math.round((currentWUnit() === "lb" ? dw / 0.453592 : dw) * 10) / 10);
+      lines.push("⚖️ Weight: " + (Math.abs(dw) < 0.05 ? "steady" : (dw < 0 ? "down " : "up ") + dwPref + " " + currentWUnit()) + " this week");
+    }
+    var streak = computeStreak("steps");
+    if (streak >= 2) lines.push("🔥 You're on a " + streak + "-day step streak — keep it rolling!");
+    return lines.join("\n");
+  }
+
+  /* =====================================================================
+     Workout history
+     ===================================================================== */
+  var historyList = document.getElementById("history-list");
+  var historyEmpty = document.getElementById("history-empty");
+  function renderHistory() {
+    if (!historyList) return;
+    var items = journal.filter(function (e) { return e.type === "workout" || e.type === "lift"; })
+      .slice().sort(function (a, b) { return b.ts - a.ts; });
+    if (historyEmpty) historyEmpty.hidden = items.length > 0;
+    var html = "", lastDay = "";
+    items.slice(0, 60).forEach(function (e) {
+      var d = new Date(e.ts);
+      var dayLabel = d.toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" });
+      if (dayLabel !== lastDay) { html += '<h3 class="topic-letter">' + dayLabel + "</h3>"; lastDay = dayLabel; }
+      html += '<div class="history-row"><span class="h-emoji">' + e.emoji +
+        '</span><span class="h-text">' + escapeHtml(e.text) +
+        '</span><span class="h-time">' + timeLabel(e.ts) + "</span></div>";
+    });
+    historyList.innerHTML = html;
+  }
+
+  // Initial paint for everything personal
+  applyProfileEverywhere();
+  renderHistory();
+  checkCelebrations();
 
   /* ===== Newsletter (client-side demo only) ===== */
   var nlForm = document.getElementById("newsletter-form");
