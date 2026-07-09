@@ -43,8 +43,10 @@ A clean, responsive **health & wellness website** — evidence-based guidance pl
 - **Strength tools** — a one-rep max estimator (Epley) with training-percentage
   tiles, plus lift logging via Vita (`"log bench 80kg x 5"`) that replies with
   your estimated 1RM.
-- **CSV export** — download your whole journal from the Journal section or by
-  telling Vita `"export my data"`.
+- **Backup & restore** — one JSON file with your whole journal, profile,
+  reminders, and settings (Profile section, or tell Vita `"backup"`); restore it
+  on any device to move your data. CSV export of the journal is also available
+  (`"export my data"`).
 - **Beginner workouts** — a "New to exercise? Start here" guide with a 15-minute
   starter routine, first-timer tips, and eight no-equipment moves explained.
 - **Explore hub** — a category grid at the top (Track / Move / Tools / Learn) that

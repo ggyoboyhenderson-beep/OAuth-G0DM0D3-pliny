@@ -319,6 +319,11 @@ img { max-width: 100%; }
 .stat-tile .stat-value { font-size: 1.35rem; font-weight: 800; color: var(--green-700); display: block; margin-top: 4px; line-height: 1.1; }
 .stat-tile .stat-value small { font-size: .7rem; font-weight: 600; color: var(--slate); }
 .stat-tile .stat-label { font-size: .72rem; color: var(--slate); text-transform: uppercase; letter-spacing: .04em; }
+.backup { max-width: 640px; margin: 22px auto 0; display: flex; flex-wrap: wrap; align-items: center; gap: 18px; justify-content: space-between; }
+.backup h3 { margin: 0 0 6px; font-size: 1.1rem; }
+.backup p { color: var(--slate); font-size: .9rem; margin: 0; max-width: 40ch; }
+.backup-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.backup .device-msg { flex-basis: 100%; margin: 0; }
 .streaks-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 22px; }
 .streak-hit { border: 2px solid var(--green-500); }
 .streak-hit .stat-value { color: var(--green-600); }

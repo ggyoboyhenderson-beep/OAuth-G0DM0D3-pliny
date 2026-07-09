@@ -236,6 +236,19 @@
           <button class="btn" type="submit">Save my profile</button>
           <p class="device-msg" id="pf-msg" role="status"></p>
         </form>
+
+        <div class="backup card">
+          <div>
+            <h3>💾 Backup &amp; restore</h3>
+            <p>Your data lives only on this device — download a backup file to keep it safe or move to a new phone. Restoring replaces what's on this device.</p>
+          </div>
+          <div class="backup-actions">
+            <button class="btn" id="backup-btn" type="button">Download backup</button>
+            <button class="btn btn-ghost" id="restore-btn" type="button">Restore from file</button>
+            <input type="file" id="restore-file" accept="application/json,.json" hidden />
+          </div>
+          <p class="device-msg" id="backup-msg" role="status"></p>
+        </div>
       </div>
     </section>
 
