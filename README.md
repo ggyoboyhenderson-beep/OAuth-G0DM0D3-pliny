@@ -61,6 +61,10 @@ A clean, responsive **health & wellness website** — evidence-based guidance pl
   journal on every open — feeding the tiles, trend charts (including a calories
   chart), and Vita's summaries. The "⌚ Phone & watch sync" card appears
   automatically when running natively.
+- **At-home workouts** — 10 no-equipment routines (quick sessions, strength,
+  HIIT, quiet apartment cardio, stretches) with a **guided player**: a timed
+  follow-along that paces every move, announces them with Vita's voice when
+  enabled, and logs the finished session to your journal, streaks, and history.
 - **Exercise library** — 30+ exercises across Push / Pull / Legs / Core / Cardio /
   Mobility / Full-body, each with step-by-step how-tos, target muscles, and form
   tips. Searchable directory; Vita coaches them too ("how do I do a squat").

@@ -140,6 +140,7 @@
               <a class="hub-tile" href="#beginner"><span aria-hidden="true">🌱</span>Beginner</a>
               <a class="hub-tile" href="#exercises"><span aria-hidden="true">💪</span>Exercises</a>
               <a class="hub-tile" href="#workout"><span aria-hidden="true">🗓️</span>Planner</a>
+              <a class="hub-tile" href="#home"><span aria-hidden="true">🏠</span>At home</a>
               <a class="hub-tile" href="#history"><span aria-hidden="true">📜</span>History</a>
             </div>
           </div>
@@ -501,6 +502,23 @@
       </div>
     </section>
 
+    <!-- At-home workouts -->
+    <section id="home" class="section">
+      <div class="container">
+        <div class="section-head">
+          <h2>At-home workouts</h2>
+          <p>Ready-made routines for your living room — no equipment, no gym. Tap one to see the moves, then press <strong>▶ Start</strong> for a guided, timed session that logs itself to your journal.</p>
+        </div>
+        <div class="topics-controls">
+          <label class="sr-only" for="home-search">Search home workouts</label>
+          <input type="search" id="home-search" class="topic-search" placeholder="Search: quick, core, HIIT, stretch…" />
+          <div class="topic-chips" id="home-chips" role="group" aria-label="Filter by type"></div>
+        </div>
+        <div class="topics-list" id="home-list"><!-- routine rows injected by script.js --></div>
+        <p class="topics-empty" id="home-empty" hidden>No routines match — try another word. 🏠</p>
+      </div>
+    </section>
+
     <!-- Exercise library -->
     <section id="exercises" class="section section-alt">
       <div class="container">
@@ -822,6 +840,24 @@
 
   <!-- Reminder/notification toasts -->
   <div class="toast-stack" id="toast-stack" aria-live="assertive"></div>
+
+  <!-- Guided workout player -->
+  <div class="player" id="player" hidden role="dialog" aria-label="Guided workout">
+    <div class="player-card">
+      <div class="player-head">
+        <span class="player-title" id="player-title">Workout</span>
+        <button class="assistant-icon-btn player-exit" id="player-exit" type="button" aria-label="Exit workout">✕</button>
+      </div>
+      <p class="player-progress" id="player-progress"></p>
+      <div class="player-move" id="player-move">—</div>
+      <div class="player-timer" id="player-timer" aria-live="polite"></div>
+      <div class="player-actions">
+        <button class="btn btn-ghost" id="player-pause" type="button">Pause</button>
+        <button class="btn" id="player-next" type="button">Done ✓</button>
+      </div>
+      <p class="player-nextup" id="player-nextup"></p>
+    </div>
+  </div>
 
   <footer class="site-footer">
     <div class="container footer-inner">

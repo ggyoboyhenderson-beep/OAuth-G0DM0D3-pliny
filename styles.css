@@ -628,6 +628,30 @@ img { max-width: 100%; }
 .topics-sources { text-align: center; color: var(--slate); font-size: .85rem; margin: 28px auto 0; max-width: 640px; }
 :root[data-theme="dark"] .topic-search { border-color: #2c463a; }
 
+/* ===== At-home workouts & guided player ===== */
+.routine-meta { display: flex; flex-wrap: wrap; gap: 8px 16px; color: var(--slate); font-size: .85rem; font-weight: 600; margin: 0 0 10px; }
+.routine-start { margin-top: 4px; }
+.player {
+  position: fixed; inset: 0; z-index: 400; display: grid; place-items: center;
+  background: rgba(10, 22, 17, 0.72); backdrop-filter: blur(6px); padding: 20px;
+}
+.player[hidden] { display: none; }
+.player-card {
+  width: min(430px, 100%); background: var(--white); border-radius: 24px;
+  padding: 22px 24px 26px; box-shadow: var(--shadow-lg); text-align: center;
+  animation: pop .2s ease;
+}
+.player-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+.player-title { font-weight: 800; color: var(--ink); }
+.player-exit { color: var(--slate); font-size: 1.05rem; }
+.player-exit:hover { background: var(--green-100); }
+.player-progress { color: var(--slate); font-size: .85rem; margin: 0 0 14px; }
+.player-move { font-size: 1.5rem; font-weight: 800; color: var(--ink); min-height: 2.2em; display: grid; place-items: center; }
+.player-timer { font-size: 3.4rem; font-weight: 800; color: var(--green-600); line-height: 1.1; min-height: 1.2em; font-variant-numeric: tabular-nums; }
+.player-timer.rep-mode { font-size: 1.4rem; color: var(--slate); font-weight: 600; }
+.player-actions { display: flex; gap: 12px; justify-content: center; margin: 18px 0 10px; }
+.player-nextup { color: var(--slate); font-size: .88rem; min-height: 1.3em; margin: 0; }
+
 /* ===== 1RM estimator ===== */
 .rm-tool { max-width: 780px; margin: 34px auto 0; }
 .rm-head h3 { font-size: 1.25rem; }
