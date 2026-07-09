@@ -523,6 +523,37 @@ img { max-width: 100%; }
 :root[data-theme="dark"] .macro-c { color: #4fd699; }
 :root[data-theme="dark"] .macro-f { color: #f0a07a; }
 
+/* ===== Explore hub ===== */
+.hub { display: grid; grid-template-columns: repeat(2, 1fr); gap: 26px; max-width: 900px; margin: 0 auto; }
+.hub-cat { font-size: 1.05rem; margin: 0 0 12px; }
+.hub-tiles { display: flex; flex-wrap: wrap; gap: 10px; }
+.hub-tile {
+  display: flex; align-items: center; gap: 8px; padding: 12px 16px;
+  background: var(--white); border-radius: var(--radius-sm); box-shadow: var(--shadow);
+  font-weight: 600; color: var(--ink); border: 1px solid rgba(15,61,46,0.05);
+  transition: transform .15s ease, box-shadow .15s ease, background .15s ease;
+}
+.hub-tile span { font-size: 1.3rem; }
+.hub-tile:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); background: var(--green-100); color: var(--green-900); }
+.hub-tile:focus-visible { outline: 3px solid var(--green-500); outline-offset: 2px; }
+
+/* ===== Steps & devices ===== */
+.devices-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; max-width: 900px; margin: 0 auto 22px; }
+.device-card { text-align: center; }
+.device-card h3 { font-size: 1.2rem; margin: 0 0 4px; }
+.device-sub { color: var(--slate); font-size: .9rem; margin: 0 0 14px; }
+.device-big { font-size: 2.6rem; font-weight: 800; color: var(--green-700); margin: 0 0 16px; line-height: 1; }
+.device-big small { font-size: .8rem; font-weight: 600; color: var(--slate); }
+.device-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+.device-msg { color: var(--green-700); font-weight: 600; min-height: 1.3em; margin: 12px 0 0; font-size: .92rem; }
+.device-note {
+  max-width: 900px; margin: 0 auto; font-size: .9rem; color: var(--slate);
+  background: #fff8e6; border: 1px solid #f2e2b0;
+}
+.device-note strong { color: #7a5c12; }
+:root[data-theme="dark"] .device-note { background: #2a2410; border-color: #4a3f18; color: #c9b98a; }
+:root[data-theme="dark"] .device-note strong { color: #e8d9a3; }
+
 /* ===== Health A–Z topics ===== */
 .topics-controls { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; justify-content: center; margin-bottom: 28px; }
 .topic-search {
@@ -564,7 +595,11 @@ img { max-width: 100%; }
 .topic-row[open] .topic-chevron { transform: rotate(180deg); }
 .topic-body { padding: 2px 8px 18px 48px; }
 .topic-body p { color: var(--slate); margin: 0 0 8px; }
-.topic-body ul { margin: 0 0 12px; padding-left: 18px; color: var(--slate); font-size: .92rem; }
+.topic-body ul, .topic-body ol { margin: 0 0 12px; padding-left: 20px; color: var(--slate); font-size: .92rem; }
+.topic-body ol li { margin-bottom: 4px; }
+.topic-body .move-tip { background: var(--bg); border-radius: 10px; padding: 8px 12px; color: var(--slate); font-size: .88rem; }
+.topic-body .move-tip strong { color: var(--green-700); }
+:root[data-theme="dark"] .topic-body .move-tip { background: #0e1a15; }
 .topic-body ul li { margin-bottom: 4px; }
 .topic-src { font-weight: 700; font-size: .88rem; color: var(--green-600); }
 .topic-src:hover { text-decoration: underline; }
@@ -665,6 +700,8 @@ img { max-width: 100%; }
   .trends-grid { grid-template-columns: 1fr; }
   .persona-grid { grid-template-columns: 1fr; }
   .macro-fields { grid-template-columns: 1fr 1fr; }
+  .hub { grid-template-columns: 1fr; gap: 20px; }
+  .devices-grid { grid-template-columns: 1fr; }
 }
 @media (max-width: 480px) {
   .macro-fields { grid-template-columns: 1fr; }
