@@ -30,6 +30,7 @@ jobs:
           mkdir -p _site
           cp index.html styles.css script.js sw.js manifest.webmanifest _site/
           cp -r icons _site/
+          cp -r share _site/
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site
