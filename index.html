@@ -126,6 +126,7 @@
           <div class="hub-group">
             <h3 class="hub-cat">📊 Track</h3>
             <div class="hub-tiles">
+              <a class="hub-tile" href="#profile"><span aria-hidden="true">👤</span>Profile</a>
               <a class="hub-tile" href="#tracker"><span aria-hidden="true">✅</span>Habits</a>
               <a class="hub-tile" href="#water"><span aria-hidden="true">💧</span>Water</a>
               <a class="hub-tile" href="#steps"><span aria-hidden="true">👟</span>Steps</a>
@@ -139,6 +140,7 @@
               <a class="hub-tile" href="#beginner"><span aria-hidden="true">🌱</span>Beginner</a>
               <a class="hub-tile" href="#exercises"><span aria-hidden="true">💪</span>Exercises</a>
               <a class="hub-tile" href="#workout"><span aria-hidden="true">🗓️</span>Planner</a>
+              <a class="hub-tile" href="#history"><span aria-hidden="true">📜</span>History</a>
             </div>
           </div>
           <div class="hub-group">
@@ -186,6 +188,54 @@
           </button>
         </div>
         <p class="persona-note" id="persona-note" role="status"></p>
+      </div>
+    </section>
+
+    <!-- Personal profile -->
+    <section id="profile" class="section">
+      <div class="container">
+        <div class="section-head">
+          <h2>Your profile</h2>
+          <p>Tell the app who you are — it personalizes Vita, prefills your calculators, and powers your goals, streaks, and weekly recaps. Stored only on this device, never uploaded.</p>
+        </div>
+        <form id="profile-form" class="macro-tool card">
+          <div class="macro-fields">
+            <label class="field">
+              <span>Name</span>
+              <input id="pf-name" type="text" maxlength="30" autocomplete="off" placeholder="Sam" />
+            </label>
+            <label class="field">
+              <span>Age</span>
+              <input id="pf-age" type="number" min="12" max="100" inputmode="numeric" placeholder="30" />
+            </label>
+            <label class="field">
+              <span>Sex</span>
+              <select id="pf-sex">
+                <option value="">Prefer not to say</option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+              </select>
+            </label>
+            <label class="field">
+              <span>Height (cm)</span>
+              <input id="pf-height" type="number" min="80" max="250" step="any" inputmode="decimal" placeholder="175" />
+            </label>
+            <label class="field">
+              <span id="pf-weight-label">Weight (kg)</span>
+              <input id="pf-weight" type="number" min="20" step="any" inputmode="decimal" placeholder="75" />
+            </label>
+            <label class="field">
+              <span>Daily step goal</span>
+              <input id="pf-steps" type="number" min="1000" step="500" inputmode="numeric" placeholder="8000" />
+            </label>
+            <label class="field">
+              <span>Sleep goal (hours)</span>
+              <input id="pf-sleep" type="number" min="4" max="12" step="0.5" inputmode="decimal" placeholder="8" />
+            </label>
+          </div>
+          <button class="btn" type="submit">Save my profile</button>
+          <p class="device-msg" id="pf-msg" role="status"></p>
+        </form>
       </div>
     </section>
 
@@ -558,10 +608,11 @@
     <section id="journal" class="section section-alt">
       <div class="container">
         <div class="section-head">
-          <h2>Your health journal</h2>
+          <h2 id="journal-title">Your health journal</h2>
           <p>Everything you log with <strong>Vita</strong>, your assistant, is tracked here — private to this browser. Tap the 💬 button to chat.</p>
         </div>
         <div class="journal-stats" id="journal-stats"><!-- snapshot tiles injected by script.js --></div>
+        <div class="streaks-grid" id="streaks"><!-- goal streak tiles injected by script.js --></div>
         <div class="journal-cols">
           <div class="card journal-panel">
             <div class="journal-panel-head">
@@ -607,6 +658,18 @@
           <p>📊 No journal data yet. Log a few days with <strong>Vita</strong> (💬) — or tap <em>"Try sample data"</em> to preview how your trends will look.</p>
         </div>
         <div class="grid trends-grid" id="trends-grid"><!-- chart cards injected by script.js --></div>
+      </div>
+    </section>
+
+    <!-- Workout history -->
+    <section id="history" class="section">
+      <div class="container">
+        <div class="section-head">
+          <h2>Workout history</h2>
+          <p>Every workout and lift you've logged or synced from your watch, newest first.</p>
+        </div>
+        <div class="topics-list" id="history-list"><!-- history rows injected by script.js --></div>
+        <p class="topics-empty" id="history-empty" hidden>No workouts yet — log one with Vita ("log workout 30 min run") or sync from your watch. 🏋️</p>
       </div>
     </section>
 

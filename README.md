@@ -22,6 +22,18 @@ A clean, responsive **health & wellness website** — evidence-based guidance pl
   at matching defaults.
 - **Fuel calculator** — estimates daily calories and protein/carb/fat targets for
   cutting, maintaining, or bulking (Mifflin-St Jeor).
+- **Personal profile** — name, age, sex, height, weight, and goals, stored only
+  on-device. Everything compiles to *you*: Vita greets you by name, "who am I"
+  recites your profile, calculators prefill, logging weight keeps the profile
+  current, and goals drive your streaks.
+- **Goal streaks & celebrations** — step and water streak tiles in the journal
+  (vs your personal goals) with celebration toasts the moment you hit a goal,
+  once per day.
+- **Weekly recap** — ask Vita "weekly recap" (she suggests it on Mondays): avg
+  steps vs goal, workout count, avg + best sleep day, water, mood, weight
+  change, and your current streak.
+- **Workout history** — every workout and lift, logged or watch-synced, grouped
+  by day, newest first.
 - **Health journal** — a live dashboard of everything Vita logs: today's snapshot
   tiles, recent entries, and active reminders. All data stays in `localStorage`.
 - **Trends over time** — small-multiple charts (weight, water, sleep, steps, and
