@@ -801,11 +801,18 @@
         (s.water < 8 ? "\n\nTip: " + (8 - s.water) + " more glass" + (8 - s.water === 1 ? "" : "es") + " to hit your water goal!" : "\n\nGreat hydration today! 💧");
     }
 
-    // Export
+    // Backup (full JSON) and CSV export
+    if (/\bbackup\b/.test(low)) {
+      downloadBackup();
+      return "Backup downloaded — one file with your journal, profile, reminders, and settings. Restore it from the Profile section on any device. 💾";
+    }
+    if (/\brestore\b/.test(low)) {
+      return "To restore, go to Your Profile → Backup & restore → \"Restore from file\" and pick your backup. It replaces this device's data. 💾";
+    }
     if (/\bexport\b|\bdownload\b.*\b(data|journal|csv)\b/.test(low)) {
       if (!journal.length) return "Nothing to export yet — log a few things first!";
       exportJournalCSV();
-      return "Done — your journal is downloading as a CSV file. 📄";
+      return "Done — your journal is downloading as a CSV file. 📄 (Say \"backup\" for a full restorable backup.)";
     }
 
     // Lifts (e.g. "log bench 80kg x 5") — must run before the weight branch
@@ -1073,6 +1080,12 @@
     { type: "sleep", title: "Sleep", emoji: "😴", unit: "hours", kind: "bar", agg: "last", series: "#4a3aa7", seriesDark: "#9085e9", fmt: function (v) { return v; } },
     { type: "steps", title: "Steps", emoji: "👟", unit: "steps", kind: "bar", agg: "last", series: "#eb6834", seriesDark: "#d95926", fmt: function (v) { return Number(v).toLocaleString(); } },
     { type: "calories", title: "Active calories", emoji: "🔥", unit: "kcal", kind: "bar", agg: "last", series: "#eda100", seriesDark: "#c98500", fmt: function (v) { return Math.round(v).toLocaleString(); } },
+    {
+      type: "workout", title: "Workout minutes", emoji: "🏋️", unit: "min", kind: "bar", agg: "sum",
+      series: "#008300", seriesDark: "#008300",
+      extract: function (e) { return e.value > 0 ? e.value : null; },
+      fmt: function (v) { return Math.round(v); },
+    },
     {
       type: "mood", title: "Mood", emoji: "🙂", unit: "", kind: "line", agg: "last",
       domain: [1, 5], noDelta: true, series: "#e87ba4", seriesDark: "#d55181",
@@ -2217,6 +2230,8 @@
       a: "Yes — via the native companion app (see NATIVE.md in the project). It reads Apple Health / Health Connect, where your phone and watch record steps around the clock; Fitbit and Garmin flow in through their own apps' health-sync settings. In the browser version you get the live step counter and Bluetooth heart-rate pairing, but not stored watch data — browsers can't access it." },
     { cat: "app", q: "How do I count steps in the background?", keys: ["count steps background", "background steps", "steps when closed", "pedometer"],
       a: "Your phone already does — the OS health app (Apple Health / Health Connect) counts steps 24/7 at near-zero battery cost. The native companion app (NATIVE.md) reads that total and syncs it to your journal every time you open it: the ⌚ card in the Steps section. In the browser, use the live counter while the app is open." },
+    { cat: "app", q: "How do I move my data to a new phone?", keys: ["new phone", "move my data", "transfer data", "backup", "restore"],
+      a: "Your Profile → Backup & restore → 'Download backup' saves one file with your whole journal, profile, reminders, and settings. On the new device, open the app and use 'Restore from file'. You can also just tell Vita 'backup'. Since there's no account or server, this file is the only copy — keep it safe." },
     { cat: "app", q: "How do I ask Vita something?", keys: ["how to use vita", "ask vita", "what can vita do"],
       a: "Tap the 💬 button. Vita understands plain language — log health ('log water', 'slept 7 hours'), set reminders, explain Health A–Z topics, answer these FAQs, and coach exercises ('how do I do a squat'). Say 'help' for the full list." },
   ];
@@ -2773,6 +2788,73 @@
   applyProfileEverywhere();
   renderHistory();
   checkCelebrations();
+
+  /* =====================================================================
+     Backup & restore — one JSON file with everything personal
+     ===================================================================== */
+  var BACKUP_KEYS = ["vh-journal", "vh-reminders", "vh-profile", "vh-chat", "vh-habits",
+    "vh-water", "vh-theme", "vh-view", "vh-view-explicit", "vh-wunit", "vh-level", "vh-voice"];
+  function makeBackup() {
+    var data = { app: "vitality-health", version: 1, exportedAt: new Date().toISOString(), store: {} };
+    BACKUP_KEYS.forEach(function (k) {
+      try {
+        var v = localStorage.getItem(k);
+        if (v != null) data.store[k] = v;
+      } catch (e) {}
+    });
+    return data;
+  }
+  function downloadBackup() {
+    var blob = new Blob([JSON.stringify(makeBackup(), null, 1)], { type: "application/json" });
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "vitality-health-backup-" + todayKey() + ".json";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 5000);
+  }
+  function restoreBackup(text) {
+    var data;
+    try { data = JSON.parse(text); } catch (e) { return "That file isn't valid JSON."; }
+    if (!data || data.app !== "vitality-health" || !data.store) {
+      return "That doesn't look like a Vitality Health backup file.";
+    }
+    var restored = 0;
+    BACKUP_KEYS.forEach(function (k) {
+      if (typeof data.store[k] === "string") {
+        try { localStorage.setItem(k, data.store[k]); restored++; } catch (e) {}
+      }
+    });
+    if (!restored) return "The backup file was empty.";
+    return null; // success
+  }
+  var backupBtn = document.getElementById("backup-btn");
+  var restoreBtn = document.getElementById("restore-btn");
+  var restoreFile = document.getElementById("restore-file");
+  var backupMsg = document.getElementById("backup-msg");
+  if (backupBtn) backupBtn.addEventListener("click", function () {
+    downloadBackup();
+    if (backupMsg) backupMsg.textContent = "Backup downloaded — keep it somewhere safe. 💾";
+  });
+  if (restoreBtn && restoreFile) {
+    restoreBtn.addEventListener("click", function () { restoreFile.click(); });
+    restoreFile.addEventListener("change", function () {
+      var f = restoreFile.files && restoreFile.files[0];
+      if (!f) return;
+      var reader = new FileReader();
+      reader.onload = function () {
+        var err = restoreBackup(String(reader.result));
+        if (err) {
+          if (backupMsg) backupMsg.textContent = err;
+          return;
+        }
+        if (backupMsg) backupMsg.textContent = "Restored! Reloading with your data…";
+        setTimeout(function () { location.reload(); }, 800);
+      };
+      reader.readAsText(f);
+    });
+  }
 
   /* ===== Newsletter (client-side demo only) ===== */
   var nlForm = document.getElementById("newsletter-form");
