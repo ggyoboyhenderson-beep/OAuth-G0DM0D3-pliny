@@ -2178,9 +2178,9 @@
     { cat: "app", q: "Does the app work offline?", keys: ["work offline", "offline", "no internet"],
       a: "Yes — once loaded, it's installed as an app with a service worker that caches everything, so the trackers, Vita, exercises, and Health A–Z all work with no connection." },
     { cat: "app", q: "Can it sync with my Apple Watch, Fitbit, or Garmin?", keys: ["apple watch", "fitbit", "garmin", "sync watch", "smartwatch"],
-      a: "Not directly — those are closed systems that only share data with native apps (via Apple HealthKit, Google Fit, or the brand's SDK). This web app can count steps live while it's open (Steps section) and connect standard Bluetooth heart-rate devices, but it can't read your watch's stored data or track in the background." },
+      a: "Yes — via the native companion app (see NATIVE.md in the project). It reads Apple Health / Health Connect, where your phone and watch record steps around the clock; Fitbit and Garmin flow in through their own apps' health-sync settings. In the browser version you get the live step counter and Bluetooth heart-rate pairing, but not stored watch data — browsers can't access it." },
     { cat: "app", q: "How do I count steps in the background?", keys: ["count steps background", "background steps", "steps when closed", "pedometer"],
-      a: "For privacy, browsers don't let a web app track steps while it's closed. Use the live step counter in the Steps section while the app is open, then tap 'Log to journal'. True always-on step counting needs your phone's native health app or a wearable." },
+      a: "Your phone already does — the OS health app (Apple Health / Health Connect) counts steps 24/7 at near-zero battery cost. The native companion app (NATIVE.md) reads that total and syncs it to your journal every time you open it: the ⌚ card in the Steps section. In the browser, use the live counter while the app is open." },
     { cat: "app", q: "How do I ask Vita something?", keys: ["how to use vita", "ask vita", "what can vita do"],
       a: "Tap the 💬 button. Vita understands plain language — log health ('log water', 'slept 7 hours'), set reminders, explain Health A–Z topics, answer these FAQs, and coach exercises ('how do I do a squat'). Say 'help' for the full list." },
   ];
@@ -2324,6 +2324,77 @@
           });
       });
     }
+  }
+
+  /* =====================================================================
+     Native health sync — active only inside the Capacitor companion app
+     (see NATIVE.md). The OS health store (Apple Health / Health Connect)
+     counts steps 24/7 from the phone and any paired watch; here we read
+     today's total and mirror it into the journal.
+     ===================================================================== */
+  var isNativeApp = !!(window.Capacitor &&
+    typeof window.Capacitor.isNativePlatform === "function" &&
+    window.Capacitor.isNativePlatform());
+  var healthPlugin = isNativeApp && window.Capacitor.Plugins &&
+    window.Capacitor.Plugins.HealthPlugin;
+  var healthCard = document.getElementById("health-card");
+  var healthStepsEl = document.getElementById("health-steps");
+  var healthMsg = document.getElementById("health-msg");
+  var healthSyncBtn = document.getElementById("health-sync");
+
+  function syncHealthSteps(interactive) {
+    if (!healthPlugin) return;
+    healthPlugin.isHealthAvailable().then(function (res) {
+      if (!res || !res.available) {
+        if (healthMsg) healthMsg.textContent = "Health data isn't available — on Android, install the Health Connect app.";
+        if (interactive && healthPlugin.showHealthConnectInPlayStore) healthPlugin.showHealthConnectInPlayStore();
+        return;
+      }
+      return healthPlugin.requestHealthPermissions({ permissions: ["READ_STEPS"] })
+        .then(function () {
+          var start = new Date();
+          start.setHours(0, 0, 0, 0);
+          return healthPlugin.queryAggregated({
+            startDate: start.toISOString(),
+            endDate: new Date().toISOString(),
+            dataType: "steps",
+            bucket: "day",
+          });
+        })
+        .then(function (resp) {
+          var total = 0;
+          ((resp && resp.aggregatedData) || []).forEach(function (s) { total += s.value || 0; });
+          total = Math.round(total);
+          if (healthStepsEl) healthStepsEl.textContent = total.toLocaleString();
+          if (!total) {
+            if (interactive && healthMsg) healthMsg.textContent = "No steps recorded yet today.";
+            return;
+          }
+          // Replace today's synced entry instead of stacking duplicates.
+          journal = journal.filter(function (e) {
+            return !(e.type === "steps" && e.synced && isToday(e.ts));
+          });
+          journal.push({
+            id: uid(), ts: Date.now(), type: "steps", emoji: "⌚",
+            text: total.toLocaleString() + " steps (synced)", value: total,
+            unit: "steps", synced: true,
+          });
+          writeStore(J_KEY, journal);
+          renderAll();
+          document.dispatchEvent(new CustomEvent("vh:journal-changed"));
+          if (healthMsg) healthMsg.textContent = "Synced " + total.toLocaleString() + " steps from your phone/watch. ⌚";
+        });
+    }).catch(function () {
+      if (healthMsg) healthMsg.textContent = "Sync failed — check Health permissions for Vitality in your settings.";
+    });
+  }
+  if (healthPlugin && healthCard) {
+    healthCard.hidden = false;
+    var webNote = document.getElementById("device-note-web");
+    if (webNote) webNote.hidden = true; // browser limits don't apply in the native app
+    if (healthSyncBtn) healthSyncBtn.addEventListener("click", function () { syncHealthSteps(true); });
+    setTimeout(function () { syncHealthSteps(false); }, 1500); // auto-sync on open
+    document.addEventListener("resume", function () { syncHealthSteps(false); }); // Capacitor app resume
   }
 
   /* ===== Newsletter (client-side demo only) ===== */

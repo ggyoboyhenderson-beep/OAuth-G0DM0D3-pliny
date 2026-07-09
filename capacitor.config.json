@@ -1,0 +1,9 @@
+{
+  "appId": "com.vitality.health",
+  "appName": "Vitality Health",
+  "webDir": "www",
+  "backgroundColor": "#f6faf7",
+  "ios": {
+    "contentInset": "automatic"
+  }
+}

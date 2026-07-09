@@ -38,9 +38,13 @@ A clean, responsive **health & wellness website** — evidence-based guidance pl
 - **Explore hub** — a category grid at the top (Track / Move / Tools / Learn) that
   jumps you straight to any section, so the app stays clean and scroll-light.
 - **Steps & devices** — a live step counter using the phone's motion sensor (logs
-  to your journal), plus Bluetooth heart-rate pairing via Web Bluetooth. Clearly
-  notes that background counting and Apple Watch / Fitbit / Garmin sync require a
-  native app (browsers can't do those).
+  to your journal), plus Bluetooth heart-rate pairing via Web Bluetooth.
+- **📱 Native companion app** (see [`NATIVE.md`](NATIVE.md)) — the same app wrapped
+  with Capacitor for **background step counting and watch sync**: the OS health
+  store (Apple Health / Health Connect) counts 24/7 from your phone and watch
+  (Apple Watch, Fitbit, Garmin, Samsung via their health-sync), and the app
+  mirrors today's total into your journal on every open. The "⌚ Phone & watch
+  sync" card appears automatically when running natively.
 - **Exercise library** — 30+ exercises across Push / Pull / Legs / Core / Cardio /
   Mobility / Full-body, each with step-by-step how-tos, target muscles, and form
   tips. Searchable directory; Vita coaches them too ("how do I do a squat").
