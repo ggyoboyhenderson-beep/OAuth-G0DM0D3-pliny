@@ -1974,10 +1974,28 @@
      ===================================================================== */
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", function () {
-      navigator.serviceWorker.register("./sw.js").catch(function () {
+      navigator.serviceWorker.register("./sw.js").then(function (reg) {
+        // Check for a new version whenever the app comes back to the
+        // foreground, so installed apps pick up updates on every open.
+        document.addEventListener("visibilitychange", function () {
+          if (document.visibilityState === "visible") reg.update().catch(function () {});
+        });
+      }).catch(function () {
         /* offline support unavailable — the site still works normally */
       });
+      // Announce silent self-updates. Data in localStorage is untouched.
+      var hadController = !!navigator.serviceWorker.controller;
+      navigator.serviceWorker.addEventListener("controllerchange", function () {
+        if (hadController) {
+          showToast("✨", "App updated", "You're on the newest version — all your data is untouched.");
+        }
+        hadController = true;
+      });
     });
+    // Ask the browser to protect stored data (profile, journal) from eviction.
+    if (navigator.storage && navigator.storage.persist) {
+      navigator.storage.persist().catch(function () {});
+    }
   }
   var installBtn = document.getElementById("install-btn");
   var deferredInstall = null;

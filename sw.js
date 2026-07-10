@@ -1,5 +1,7 @@
-/* Vitality Health — service worker: offline-first app shell */
-var CACHE = "vitality-v6";
+/* Vitality Health — service worker: fresh-first with offline fallback.
+   Online: every open fetches the newest version (updates flow straight
+   through, no manual refreshing). Offline: everything serves from cache. */
+var CACHE = "vitality-v7";
 var SHELL = [
   "./",
   "./index.html",
@@ -31,27 +33,28 @@ self.addEventListener("activate", function (e) {
   );
 });
 
-// Cache-first with background refresh for same-origin GETs; external
-// links (WHO, CDC, ...) pass through untouched.
+// Network-first for same-origin GETs: fresh content on every load while
+// online (kept in cache as we go), full cache fallback when offline.
+// External links (WHO, CDC, ...) pass through untouched.
 self.addEventListener("fetch", function (e) {
   var req = e.request;
   if (req.method !== "GET") return;
   var url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
   e.respondWith(
-    caches.match(req).then(function (hit) {
-      var refresh = fetch(req).then(function (res) {
-        if (res && res.ok) {
-          var copy = res.clone();
-          caches.open(CACHE).then(function (c) { c.put(req, copy); });
-        }
-        return res;
-      }).catch(function () {
+    fetch(req).then(function (res) {
+      if (res && res.ok) {
+        var copy = res.clone();
+        caches.open(CACHE).then(function (c) { c.put(req, copy); });
+      }
+      return res;
+    }).catch(function () {
+      return caches.match(req).then(function (hit) {
         // Offline navigation falls back to the cached app shell.
+        if (hit) return hit;
         if (req.mode === "navigate") return caches.match("./index.html");
         return hit;
       });
-      return hit || refresh;
     })
   );
 });
