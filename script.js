@@ -6,6 +6,111 @@
   var yearEl = document.getElementById("year");
   if (yearEl) yearEl.textContent = new Date().getFullYear();
 
+  /* =====================================================================
+     App shell router — five destinations instead of one long scroll.
+     Sections carry data-view; the body carries the active data-tab and
+     CSS shows only the matching ones. Every section stays in the DOM
+     (crawlable, and the page still works as one page without JS).
+     ===================================================================== */
+  var TABS = ["today", "move", "track", "learn", "profile"];
+  var TAB_LABEL = { today: "Today", move: "Move", track: "Track", learn: "Learn", profile: "You" };
+  var BASE_TITLE = "Vitality Health";
+  var tabbar = document.getElementById("tabbar");
+  var announcer = document.getElementById("view-announce");
+
+  // Which destination owns a given section id (first one wins).
+  var sectionTab = {};
+  document.querySelectorAll("[data-view][id]").forEach(function (el) {
+    sectionTab[el.id] = el.getAttribute("data-view").split(/\s+/)[0];
+  });
+
+  function tabFromHash(hash) {
+    var id = (hash || "").replace(/^#/, "");
+    if (!id) return null;
+    if (TABS.indexOf(id) !== -1) return id;
+    if (sectionTab[id]) return sectionTab[id];
+    return null;
+  }
+
+  function showTab(tab, opts) {
+    if (TABS.indexOf(tab) === -1) tab = "today";
+    document.body.setAttribute("data-tab", tab);
+    if (tabbar) {
+      tabbar.querySelectorAll("a").forEach(function (a) {
+        if (a.getAttribute("data-tab") === tab) a.setAttribute("aria-current", "page");
+        else a.removeAttribute("aria-current");
+      });
+    }
+    // A view change is a page change to a screen reader, so say so.
+    document.title = TAB_LABEL[tab] + " · " + BASE_TITLE;
+    if (announcer) announcer.textContent = TAB_LABEL[tab];
+    if (opts && opts.focus) {
+      // Deferred: a click on a tab link focuses that link by default, and
+      // that default runs after this handler — so move focus afterwards.
+      setTimeout(function () {
+        // First *visible* heading — some sections in a view can be hidden
+        // (the power tools in Simple view), and focusing those is a no-op.
+        var candidates = document.querySelectorAll(
+          '[data-view~="' + tab + '"] h1, [data-view~="' + tab + '"] h2');
+        var first = null;
+        for (var i = 0; i < candidates.length; i++) {
+          if (candidates[i].offsetParent !== null) { first = candidates[i]; break; }
+        }
+        if (!first) return;
+        if (!first.hasAttribute("tabindex")) first.setAttribute("tabindex", "-1");
+        try { first.focus({ preventScroll: true }); } catch (e) { first.focus(); }
+      }, 0);
+    }
+    try { sessionStorage.setItem("vh-tab", tab); } catch (e) {}
+  }
+
+  function routeFromHash(opts) {
+    var hash = location.hash;
+    var tab = tabFromHash(hash);
+    var id = hash.replace(/^#/, "");
+    // Linking straight to a power tool shouldn't land on a hidden section.
+    if ((id === "workout" || id === "nutrition") &&
+        typeof currentView === "function" && currentView() === "simple" &&
+        typeof setView === "function") {
+      setView("full", true);
+    }
+    // A link straight to a section: open its destination, then reveal it.
+    if (tab) {
+      showTab(tab, opts);
+      if (TABS.indexOf(id) === -1 && document.getElementById(id)) {
+        var target = document.getElementById(id);
+        setTimeout(function () { target.scrollIntoView({ behavior: "smooth", block: "start" }); }, 0);
+        return;
+      }
+      window.scrollTo({ top: 0, behavior: opts && opts.initial ? "auto" : "smooth" });
+    }
+  }
+
+  // Enabling the shell is what switches the page from "one long scroll"
+  // to "an app"; without JS this attribute is never set and nothing hides.
+  document.body.setAttribute("data-app", "1");
+  var startTab = tabFromHash(location.hash);
+  if (!startTab) {
+    try { startTab = sessionStorage.getItem("vh-tab"); } catch (e) {}
+  }
+  showTab(startTab || "today", {});
+  if (location.hash) routeFromHash({ initial: true });
+  window.addEventListener("hashchange", function () { routeFromHash({ focus: true }); });
+
+  // Once there's real data to show, the marketing hero steps aside so
+  // Today opens on the dashboard instead.
+  function refreshHeroState() {
+    var hasData = false;
+    try {
+      hasData = (localStorage.getItem("vh-journal") || "[]").length > 5 ||
+                (localStorage.getItem("vh-profile") || "{}").length > 5;
+    } catch (e) {}
+    if (hasData) document.body.setAttribute("data-has-data", "1");
+    else document.body.removeAttribute("data-has-data");
+  }
+  refreshHeroState();
+  document.addEventListener("vh:journal-changed", refreshHeroState);
+
   /* Mobile nav toggle */
   var toggle = document.querySelector(".nav-toggle");
   var menu = document.getElementById("nav-menu");
@@ -694,7 +799,9 @@
     // Informational questions about serious conditions ("what is a stroke")
     // get educational answers; first-person urgency still routes to crisis.
     var askPat = /\b(tell me about|what is|what's|learn about|info(?:rmation)? (?:on|about)|explain|help with)\b/;
-    var urgentPat = /\b(i'?m|i am|my|me|right now|happening|having|help me)\b/;
+    // First-person urgency. Deliberately excludes a bare "me", because
+    // "tell me about <condition>" is a request to learn, not a cry for help.
+    var urgentPat = /\b(i'?m|i am|i think i|my|right now|happening|having|help me)\b/;
     if (CRISIS.test(low)) {
       if (askPat.test(low) && !urgentPat.test(low)) {
         var infoTopic = findTopic(low);
@@ -2031,20 +2138,6 @@
   window.addEventListener("appinstalled", function () {
     if (installBtn) installBtn.hidden = true;
     showToast("🌿", "Installed!", "Vitality Health is now on your home screen.");
-  });
-
-  /* =====================================================================
-     Explore hub — jump to any section; unhide advanced ones first
-     ===================================================================== */
-  var ADV_SECTIONS = { workout: 1, nutrition: 1 };
-  document.querySelectorAll(".hub-tile").forEach(function (a) {
-    a.addEventListener("click", function () {
-      var id = (a.getAttribute("href") || "").slice(1);
-      if (ADV_SECTIONS[id] && typeof currentView === "function" &&
-          currentView() === "simple" && typeof setView === "function") {
-        setView("full", true);
-      }
-    });
   });
 
   /* =====================================================================

@@ -43,11 +43,10 @@
         <span></span><span></span><span></span>
       </button>
       <ul class="nav-menu" id="nav-menu">
-        <li><a href="#explore">Explore</a></li>
-        <li><a href="#steps">Steps</a></li>
-        <li><a href="#exercises">Exercises</a></li>
-        <li><a href="#topics">Health A–Z</a></li>
-        <li><a href="#faq">Q&amp;A</a></li>
+        <li><a href="#today">Today</a></li>
+        <li><a href="#move">Move</a></li>
+        <li><a href="#track">Track</a></li>
+        <li><a href="#learn">Learn</a></li>
         <li>
           <button class="view-toggle install-btn" id="install-btn" type="button" hidden>📲 Install</button>
         </li>
@@ -69,7 +68,7 @@
 
   <main>
     <!-- Hero -->
-    <section class="hero">
+    <section class="hero" data-view="today">
       <div class="container hero-inner">
         <div class="hero-copy">
           <p class="eyebrow">Evidence-based wellness</p>
@@ -110,62 +109,13 @@
     </section>
 
     <!-- Disclaimer banner -->
-    <div class="disclaimer container" role="note">
+    <div class="disclaimer container" data-view="today" role="note">
       <strong>Note:</strong> This site is for general education only and is not medical advice.
       Always consult a qualified healthcare professional for personal guidance.
     </div>
 
-    <!-- Explore hub: jump straight to any part of the app -->
-    <section id="explore" class="section">
-      <div class="container">
-        <div class="section-head">
-          <h2>Explore the app</h2>
-          <p>Tap a card to jump straight there — everything's one click away, no endless scrolling.</p>
-        </div>
-        <div class="hub">
-          <div class="hub-group">
-            <h3 class="hub-cat">📊 Track</h3>
-            <div class="hub-tiles">
-              <a class="hub-tile" href="#profile"><span aria-hidden="true">👤</span>Profile</a>
-              <a class="hub-tile" href="#tracker"><span aria-hidden="true">✅</span>Habits</a>
-              <a class="hub-tile" href="#water"><span aria-hidden="true">💧</span>Water</a>
-              <a class="hub-tile" href="#steps"><span aria-hidden="true">👟</span>Steps</a>
-              <a class="hub-tile" href="#journal"><span aria-hidden="true">📔</span>Journal</a>
-              <a class="hub-tile" href="#trends"><span aria-hidden="true">📈</span>Trends</a>
-            </div>
-          </div>
-          <div class="hub-group">
-            <h3 class="hub-cat">🏋️ Move</h3>
-            <div class="hub-tiles">
-              <a class="hub-tile" href="#beginner"><span aria-hidden="true">🌱</span>Beginner</a>
-              <a class="hub-tile" href="#exercises"><span aria-hidden="true">💪</span>Exercises</a>
-              <a class="hub-tile" href="#workout"><span aria-hidden="true">🗓️</span>Planner</a>
-              <a class="hub-tile" href="#home"><span aria-hidden="true">🏠</span>At home</a>
-              <a class="hub-tile" href="#history"><span aria-hidden="true">📜</span>History</a>
-            </div>
-          </div>
-          <div class="hub-group">
-            <h3 class="hub-cat">🧮 Tools</h3>
-            <div class="hub-tiles">
-              <a class="hub-tile" href="#bmi"><span aria-hidden="true">⚖️</span>BMI</a>
-              <a class="hub-tile" href="#nutrition"><span aria-hidden="true">🍽️</span>Fuel</a>
-              <a class="hub-tile" href="#steps"><span aria-hidden="true">⌚</span>Devices</a>
-            </div>
-          </div>
-          <div class="hub-group">
-            <h3 class="hub-cat">📚 Learn</h3>
-            <div class="hub-tiles">
-              <a class="hub-tile" href="#topics"><span aria-hidden="true">🏥</span>Health A–Z</a>
-              <a class="hub-tile" href="#faq"><span aria-hidden="true">❓</span>Q&amp;A</a>
-              <a class="hub-tile" href="#articles"><span aria-hidden="true">📰</span>Articles</a>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
     <!-- Persona / level selector -->
-    <section id="persona" class="persona-band">
+    <section id="persona" data-view="profile" class="persona-band">
       <div class="container">
         <div class="section-head">
           <h2>Health is for every body</h2>
@@ -193,7 +143,7 @@
     </section>
 
     <!-- Personal profile -->
-    <section id="profile" class="section">
+    <section id="profile" data-view="profile" class="section">
       <div class="container">
         <div class="section-head">
           <h2>Your profile</h2>
@@ -254,7 +204,7 @@
     </section>
 
     <!-- Pillars -->
-    <section id="pillars" class="section">
+    <section id="pillars" data-view="learn" class="section">
       <div class="container">
         <div class="section-head">
           <h2>The four pillars of wellbeing</h2>
@@ -286,7 +236,7 @@
     </section>
 
     <!-- Habit Tracker -->
-    <section id="tracker" class="section section-alt">
+    <section id="tracker" data-view="today" class="section section-alt">
       <div class="container">
         <div class="section-head">
           <h2>Daily habit tracker</h2>
@@ -313,7 +263,7 @@
     </section>
 
     <!-- Water Intake Tracker -->
-    <section id="water" class="section">
+    <section id="water" data-view="today" class="section">
       <div class="container">
         <div class="section-head">
           <h2>Water intake tracker</h2>
@@ -337,7 +287,7 @@
     </section>
 
     <!-- Steps & devices -->
-    <section id="steps" class="section section-alt">
+    <section id="steps" data-view="track" class="section section-alt">
       <div class="container">
         <div class="section-head">
           <h2>Steps &amp; devices</h2>
@@ -381,7 +331,7 @@
     </section>
 
     <!-- Workout Planner -->
-    <section id="workout" class="section section-alt advanced">
+    <section id="workout" data-view="move" class="section section-alt advanced">
       <div class="container">
         <div class="section-head">
           <h2>Workout planner</h2>
@@ -457,7 +407,7 @@
     </section>
 
     <!-- Beginner workouts -->
-    <section id="beginner" class="section">
+    <section id="beginner" data-view="move" class="section">
       <div class="container">
         <div class="section-head">
           <h2>New to exercise? Start here</h2>
@@ -503,7 +453,7 @@
     </section>
 
     <!-- At-home workouts -->
-    <section id="home" class="section">
+    <section id="home" data-view="move" class="section">
       <div class="container">
         <div class="section-head">
           <h2>At-home workouts</h2>
@@ -520,7 +470,7 @@
     </section>
 
     <!-- Exercise library -->
-    <section id="exercises" class="section section-alt">
+    <section id="exercises" data-view="move" class="section section-alt">
       <div class="container">
         <div class="section-head">
           <h2>Exercise library</h2>
@@ -537,7 +487,7 @@
     </section>
 
     <!-- BMI Calculator -->
-    <section id="bmi" class="section">
+    <section id="bmi" data-view="track" class="section">
       <div class="container">
         <div class="section-head">
           <h2>BMI calculator</h2>
@@ -568,7 +518,7 @@
     </section>
 
     <!-- Fuel / macro calculator -->
-    <section id="nutrition" class="section section-alt advanced">
+    <section id="nutrition" data-view="track" class="section section-alt advanced">
       <div class="container">
         <div class="section-head">
           <h2>Fuel calculator</h2>
@@ -663,7 +613,7 @@
     </section>
 
     <!-- Health Journal (populated by Vita, the AI assistant) -->
-    <section id="journal" class="section section-alt">
+    <section id="journal" data-view="today track" class="section section-alt">
       <div class="container">
         <div class="section-head">
           <h2 id="journal-title">Your health journal</h2>
@@ -698,7 +648,7 @@
     </section>
 
     <!-- Trends (charts of journal data over time) -->
-    <section id="trends" class="section">
+    <section id="trends" data-view="track" class="section">
       <div class="container">
         <div class="section-head">
           <h2>Your trends over time</h2>
@@ -720,7 +670,7 @@
     </section>
 
     <!-- Workout history -->
-    <section id="history" class="section">
+    <section id="history" data-view="move" class="section">
       <div class="container">
         <div class="section-head">
           <h2>Workout history</h2>
@@ -732,7 +682,7 @@
     </section>
 
     <!-- Health A–Z topics library -->
-    <section id="topics" class="section section-alt">
+    <section id="topics" data-view="learn" class="section section-alt">
       <div class="container">
         <div class="section-head">
           <h2>Health A–Z</h2>
@@ -750,7 +700,7 @@
     </section>
 
     <!-- Questions & Answers / FAQ -->
-    <section id="faq" class="section">
+    <section id="faq" data-view="learn" class="section">
       <div class="container">
         <div class="section-head">
           <h2>Questions &amp; answers</h2>
@@ -767,7 +717,7 @@
     </section>
 
     <!-- Articles -->
-    <section id="articles" class="section">
+    <section id="articles" data-view="learn" class="section">
       <div class="container">
         <div class="section-head">
           <h2>Latest from the blog</h2>
@@ -815,7 +765,7 @@
     </section>
 
     <!-- Newsletter -->
-    <section id="newsletter" class="section newsletter">
+    <section id="newsletter" data-view="profile" class="section newsletter">
       <div class="container newsletter-inner card">
         <div>
           <h2>Weekly wellness tips</h2>
@@ -899,7 +849,7 @@
   </div>
 
   <!-- Privacy -->
-  <section id="privacy" class="section">
+  <section id="privacy" data-view="profile" class="section">
     <div class="container">
       <div class="section-head">
         <h2>Your privacy, in plain language</h2>
@@ -932,6 +882,17 @@
     </div>
     <p class="copyright">© <span id="year"></span> Vitality Health. Local-only · no account · no ads. For educational purposes only — not medical advice.</p>
   </footer>
+
+
+  <!-- Primary navigation: 5 destinations, always in the thumb zone -->
+  <nav class="tabbar" id="tabbar" aria-label="Sections">
+    <a href="#today" data-tab="today"><span aria-hidden="true">☀️</span>Today</a>
+    <a href="#move" data-tab="move"><span aria-hidden="true">🏋️</span>Move</a>
+    <a href="#track" data-tab="track"><span aria-hidden="true">📈</span>Track</a>
+    <a href="#learn" data-tab="learn"><span aria-hidden="true">📚</span>Learn</a>
+    <a href="#profile" data-tab="profile"><span aria-hidden="true">👤</span>You</a>
+  </nav>
+  <p class="sr-only" id="view-announce" aria-live="polite"></p>
 
   <script src="calculators.js"></script>
   <script src="script.js"></script>
