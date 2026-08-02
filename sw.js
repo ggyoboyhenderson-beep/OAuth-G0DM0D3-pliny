@@ -1,12 +1,13 @@
 /* Vitality Health — service worker: fresh-first with offline fallback.
    Online: every open fetches the newest version (updates flow straight
    through, no manual refreshing). Offline: everything serves from cache. */
-var CACHE = "vitality-v8";
+var CACHE = "vitality-v9";
 var SHELL = [
   "./",
   "./index.html",
   "./styles.css",
   "./script.js",
+  "./calculators.js",
   "./manifest.webmanifest",
   "./icons/icon-192.png",
   "./icons/icon-512.png",
