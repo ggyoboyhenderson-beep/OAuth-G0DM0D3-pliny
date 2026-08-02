@@ -831,3 +831,75 @@ select:focus-visible, summary:focus-visible {
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; scroll-behavior: auto; }
 }
+
+/* =====================================================================
+   App shell: five destinations, one glanceable screen at a time.
+   Progressive enhancement — without JS, body has no data-app and every
+   section stays visible as one scrollable page (and stays crawlable).
+   ===================================================================== */
+.tabbar { display: none; }
+
+body[data-app] .tabbar {
+  display: grid; grid-template-columns: repeat(5, 1fr);
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 210;
+  background: color-mix(in srgb, var(--bg) 92%, transparent);
+  backdrop-filter: saturate(180%) blur(12px);
+  border-top: 1px solid rgba(15, 61, 46, 0.1);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+:root[data-theme="dark"] body[data-app] .tabbar { border-top-color: rgba(255,255,255,0.09); }
+body[data-app] .tabbar a {
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  padding: 9px 4px 8px; min-height: 52px; justify-content: center;
+  font-size: .7rem; font-weight: 700; letter-spacing: .01em;
+  color: var(--slate); text-decoration: none;
+}
+body[data-app] .tabbar a span { font-size: 1.25rem; line-height: 1; }
+body[data-app] .tabbar a[aria-current="page"] { color: var(--green-600); }
+body[data-app] .tabbar a:focus-visible { outline: 3px solid var(--green-500); outline-offset: -3px; }
+
+/* Only the active destination is shown */
+body[data-app] [data-view] { display: none; }
+body[data-app][data-tab="today"]   [data-view~="today"],
+body[data-app][data-tab="move"]    [data-view~="move"],
+body[data-app][data-tab="track"]   [data-view~="track"],
+body[data-app][data-tab="learn"]   [data-view~="learn"],
+body[data-app][data-tab="profile"] [data-view~="profile"] { display: block; }
+/* the disclaimer is a flow container, not a section */
+body[data-app][data-tab="today"] .disclaimer { display: block; }
+
+/* Clear the fixed bar and the assistant launcher */
+body[data-app] main { padding-bottom: 96px; }
+body[data-app] .assistant { bottom: calc(78px + env(safe-area-inset-bottom, 0px)); }
+body[data-app] .toast-stack { bottom: calc(78px + env(safe-area-inset-bottom, 0px)); }
+
+/* Today reads dashboard-first: your numbers, then today's actions */
+body[data-app][data-tab="today"] main { display: flex; flex-direction: column; }
+body[data-app][data-tab="today"] #journal { order: 1; }
+body[data-app][data-tab="today"] #tracker { order: 2; }
+body[data-app][data-tab="today"] #water   { order: 3; }
+body[data-app][data-tab="today"] .disclaimer { order: 4; }
+/* The marketing hero is for newcomers; once you have data it steps aside */
+body[data-app][data-tab="today"] .hero { order: 0; }
+body[data-app][data-has-data] .hero { display: none; }
+
+/* On desktop the top nav carries the same destinations, so the bar is
+   redundant below the content width where thumbs aren't the input. */
+@media (min-width: 900px) {
+  body[data-app] .tabbar {
+    position: sticky; top: 68px; bottom: auto;
+    max-width: var(--maxw); margin: 0 auto; border-top: none;
+    border-bottom: 1px solid rgba(15, 61, 46, 0.1);
+    grid-template-columns: repeat(5, minmax(0, 140px)); justify-content: center;
+  }
+  body[data-app] main { padding-bottom: 24px; }
+  body[data-app] .assistant, body[data-app] .toast-stack { bottom: 22px; }
+}
+
+/* Today is a dashboard, not an article: trim the editorial chrome so the
+   numbers and today's actions fit in the first viewport. */
+body[data-app][data-tab="today"] .section { padding: 26px 0 8px; }
+body[data-app][data-tab="today"] .section-head { margin-bottom: 18px; text-align: left; }
+body[data-app][data-tab="today"] .section-head p { display: none; }
+body[data-app][data-tab="today"] .section-head h2 { font-size: 1.35rem; }
+body[data-app][data-tab="today"] .journal-cols { gap: 14px; }

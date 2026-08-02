@@ -58,8 +58,12 @@ A clean, responsive **health & wellness website** — evidence-based guidance pl
   (`"export my data"`).
 - **Beginner workouts** — a "New to exercise? Start here" guide with a 15-minute
   starter routine, first-timer tips, and eight no-equipment moves explained.
-- **Explore hub** — a category grid at the top (Track / Move / Tools / Learn) that
-  jumps you straight to any section, so the app stays clean and scroll-light.
+- **App shell with five destinations** — a persistent bottom tab bar (Today /
+  Move / Track / Learn / You) switches between views instead of scrolling one
+  long page: four sections on screen at a time instead of twenty-one. Today opens
+  as a glanceable dashboard, and the marketing hero steps aside once you have
+  data. Deep links still work (`#topics` opens Learn and scrolls to it), and
+  without JavaScript the page degrades to a single scrollable, crawlable page.
 - **Steps & devices** — a live step counter using the phone's motion sensor (logs
   to your journal), plus Bluetooth heart-rate pairing via Web Bluetooth.
 - **📱 Native companion app** (see [`NATIVE.md`](NATIVE.md)) — the same app wrapped
