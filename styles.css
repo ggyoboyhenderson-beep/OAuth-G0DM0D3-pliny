@@ -427,6 +427,9 @@ img { max-width: 100%; }
   animation: pop .2s ease;
 }
 .toast .toast-emoji { font-size: 1.4rem; }
+.toast-action { cursor: pointer; border-left-color: var(--teal); }
+.toast-action:hover { background: var(--green-100); }
+.toast-action:focus-visible { outline: 3px solid var(--green-500); outline-offset: 2px; }
 .toast strong { display: block; font-size: .95rem; }
 .toast span { font-size: .85rem; color: var(--slate); }
 
@@ -628,6 +631,26 @@ img { max-width: 100%; }
 .topics-empty { text-align: center; color: var(--slate); }
 .topics-sources { text-align: center; color: var(--slate); font-size: .85rem; margin: 28px auto 0; max-width: 640px; }
 :root[data-theme="dark"] .topic-search { border-color: #2c463a; }
+
+/* ===== WCAG 2.2 AA — 2.5.8 Target Size (Minimum): every pointer target
+   is at least 24x24 CSS px, and focus is always visible. ===== */
+.habit-list input[type="checkbox"] { width: 24px; height: 24px; }
+.munit-btn, .unit-btn { min-height: 24px; padding-top: 9px; padding-bottom: 9px; }
+.topic-src {
+  display: inline-block; min-height: 24px; padding: 4px 0;
+  line-height: 1.35;
+}
+.greeting-close {
+  min-width: 24px; min-height: 24px; display: grid; place-items: center;
+}
+.glass { min-width: 44px; min-height: 44px; }
+.r-cancel { min-width: 24px; min-height: 24px; }
+.link-btn { min-height: 24px; }
+/* Focus is never invisible, whatever the control */
+a:focus-visible, button:focus-visible, input:focus-visible,
+select:focus-visible, summary:focus-visible {
+  outline: 3px solid var(--green-500); outline-offset: 2px; border-radius: 4px;
+}
 
 /* ===== Barcode lookup & privacy ===== */
 .scan { max-width: 640px; margin: 24px auto 0; }

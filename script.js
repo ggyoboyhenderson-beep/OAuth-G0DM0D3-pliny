@@ -165,14 +165,7 @@
         categoryEl.className = "bmi-category cat-over";
         return;
       }
-      var bmi;
-      if (unit === "metric") {
-        var m = h / 100;
-        bmi = w / (m * m);
-      } else {
-        bmi = (703 * w) / (h * h);
-      }
-      bmi = Math.round(bmi * 10) / 10;
+      var bmi = VH_CALC.bmi(h, w, unit);
       var c = classify(bmi);
       resultBox.hidden = false;
       valueEl.textContent = bmi.toFixed(1);
@@ -583,12 +576,21 @@
 
   /* ---------- Toasts + notifications ---------- */
   var toastStack = document.getElementById("toast-stack");
-  function showToast(emoji, title, body, ms) {
+  function showToast(emoji, title, body, ms, onClick) {
     if (!toastStack) return;
     var el = document.createElement("div");
     el.className = "toast";
     el.innerHTML = '<span class="toast-emoji">' + emoji + "</span><div><strong>" +
       escapeHtml(title) + "</strong><span>" + escapeHtml(body) + "</span></div>";
+    if (onClick) {
+      el.classList.add("toast-action");
+      el.setAttribute("role", "button");
+      el.setAttribute("tabindex", "0");
+      el.addEventListener("click", function () { onClick(); el.remove(); });
+      el.addEventListener("keydown", function (ev) {
+        if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); onClick(); el.remove(); }
+      });
+    }
     toastStack.appendChild(el);
     setTimeout(function () {
       el.style.transition = "opacity .3s, transform .3s";
@@ -804,6 +806,7 @@
     // Backup (full JSON) and CSV export
     if (/\bbackup\b/.test(low)) {
       downloadBackup();
+      markBackedUp();
       return "Backup downloaded — one file with your journal, profile, reminders, and settings. Restore it from the Profile section on any device. 💾";
     }
     if (/\brestore\b/.test(low)) {
@@ -821,8 +824,7 @@
       var lname = liftMatch[1], lw = parseFloat(liftMatch[2]);
       var lunit = liftMatch[3] ? liftMatch[3].replace("lbs", "lb") : "kg";
       var lreps = Math.max(1, Math.min(20, parseInt(liftMatch[4], 10)));
-      var e1 = lreps === 1 ? lw : lw * (1 + lreps / 30); // Epley
-      e1 = Math.round(e1 * 10) / 10;
+      var e1 = VH_CALC.oneRepMax(lw, lreps); // Epley — see calculators.js
       addEntry("lift", "💪", capitalize(lname) + " " + lw + " " + lunit + " × " + lreps + " (e1RM " + e1 + ")", e1, lunit, { weight: lw, reps: lreps, lift: lname });
       return "Logged " + lname + " " + lw + " " + lunit + " × " + lreps + ". Estimated 1RM ≈ " + e1 + " " + lunit + ". 💪 Add a little weight when every rep feels solid.";
     }
@@ -1417,21 +1419,13 @@
         noteEl.textContent = "Please enter your age, height, and weight.";
         return;
       }
-      var kg = macroUnit === "metric" ? w : w * 0.453592;
-      var cm = macroUnit === "metric" ? h : h * 2.54;
-      var bmr = 10 * kg + 6.25 * cm - 5 * age + (sex === "male" ? 5 : -161);
-      var tdee = bmr * activity;
-      var cal = goal === "cut" ? tdee - 400 : goal === "bulk" ? tdee + 350 : tdee;
-      cal = Math.round(cal / 10) * 10;
-      // Safety floor (AHA/ACC/TOS-aligned): never suggest a very-low-calorie
-      // goal. Below the floor needs medical supervision, not an app.
-      var floor = sex === "male" ? 1500 : 1200;
-      var floored = cal < floor;
-      if (floored) cal = floor;
-      var proteinPerKg = goal === "cut" ? 2.2 : goal === "bulk" ? 2.0 : 1.8;
-      var protein = Math.round(proteinPerKg * kg);
-      var fat = Math.round((cal * 0.25) / 9);
-      var carbs = Math.max(0, Math.round((cal - protein * 4 - fat * 9) / 4));
+      // Math lives in calculators.js so the safety floor is unit-tested.
+      var kg = VH_CALC.toKg(w, macroUnit === "metric" ? "kg" : "lb");
+      var cm = VH_CALC.toCm(h, macroUnit === "metric" ? "cm" : "in");
+      var res = VH_CALC.goalCalories({ kg: kg, cm: cm, age: age, sex: sex, activity: activity, goal: goal });
+      var cal = res.calories, floored = res.floored, floor = res.floor;
+      var m = VH_CALC.macros(cal, kg, goal);
+      var protein = m.protein, fat = m.fat, carbs = m.carbs;
       calEl.textContent = cal.toLocaleString();
       pEl.textContent = protein + "g"; cEl.textContent = carbs + "g"; fEl.textContent = fat + "g";
       noteEl.textContent = (floored
@@ -1608,8 +1602,7 @@
         return;
       }
       reps = Math.min(12, reps);
-      var e1 = reps === 1 ? w : w * (1 + reps / 30); // Epley
-      e1 = Math.round(e1 * 10) / 10;
+      var e1 = VH_CALC.oneRepMax(w, reps); // Epley — see calculators.js
       maxEl.textContent = e1 + " " + unit;
       var scheme = [
         { p: 95, r: 2 }, { p: 90, r: 4 }, { p: 85, r: 6 },
@@ -2830,6 +2823,7 @@
   }
 
   // Initial paint for everything personal
+  setTimeout(maybeNudgeBackup, 6000);
   applyProfileEverywhere();
   renderHistory();
   checkCelebrations();
@@ -2887,12 +2881,45 @@
     if (!restored) return "The backup file was empty.";
     return null; // success
   }
+  /* ---- durability: schema stamp + backup reminders ----
+     All data is on-device by design, so the only real protection against
+     losing it is an off-device copy. Rather than hoping people remember,
+     nudge them when it's been a while. */
+  var SCHEMA_KEY = "vh-schema", SCHEMA_VERSION = 1;
+  var LAST_BACKUP_KEY = "vh-last-backup";
+  var BACKUP_NUDGE_DAYS = 14;
+
+  (function stampSchema() {
+    try {
+      var stored = parseInt(localStorage.getItem(SCHEMA_KEY) || "0", 10);
+      // Forward-only migrations go here as the shape changes; nothing to
+      // migrate yet, so we just record the version we wrote.
+      if (stored !== SCHEMA_VERSION) localStorage.setItem(SCHEMA_KEY, String(SCHEMA_VERSION));
+    } catch (e) {}
+  })();
+
+  function markBackedUp() {
+    try { localStorage.setItem(LAST_BACKUP_KEY, String(Date.now())); } catch (e) {}
+  }
+  function maybeNudgeBackup() {
+    if (journal.length < 10) return; // nothing worth losing yet
+    var last = 0;
+    try { last = parseInt(localStorage.getItem(LAST_BACKUP_KEY) || "0", 10); } catch (e) {}
+    var days = last ? (Date.now() - last) / 86400000 : Infinity;
+    if (days < BACKUP_NUDGE_DAYS) return;
+    showToast("💾", "Back up your data?",
+      last ? "It's been a while since your last backup. Tap to download one."
+           : "Your data lives only on this device. Tap to save a backup copy.",
+      12000, function () { downloadBackup(); markBackedUp(); });
+  }
+
   var backupBtn = document.getElementById("backup-btn");
   var restoreBtn = document.getElementById("restore-btn");
   var restoreFile = document.getElementById("restore-file");
   var backupMsg = document.getElementById("backup-msg");
   if (backupBtn) backupBtn.addEventListener("click", function () {
     downloadBackup();
+    markBackedUp();
     if (backupMsg) backupMsg.textContent = "Backup downloaded — keep it somewhere safe. 💾";
   });
   if (restoreBtn && restoreFile) {

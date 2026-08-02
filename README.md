@@ -43,6 +43,15 @@ A clean, responsive **health & wellness website** — evidence-based guidance pl
 - **Strength tools** — a one-rep max estimator (Epley) with training-percentage
   tiles, plus lift logging via Vita (`"log bench 80kg x 5"`) that replies with
   your estimated 1RM.
+- **Tested calculations** — BMI, Mifflin-St Jeor (including the calorie floor),
+  Epley 1RM, and the macro split live in `calculators.js` and are covered by 24
+  unit tests (`npm test`), one of which sweeps ~4,000 body/age/activity
+  combinations to prove the safety floor cannot be breached.
+- **Accessible** — WCAG 2.2 AA target sizes (24×24 minimum) and visible focus on
+  every control; no drag-only interactions.
+- **Durable by habit** — data is stamped with a schema version, persistent
+  storage is requested, and the app nudges you to download a backup if it's been
+  two weeks, because an on-device-only app needs an off-device copy.
 - **Backup & restore** — one JSON file with your whole journal, profile,
   reminders, and settings (Profile section, or tell Vita `"backup"`); restore it
   on any device to move your data. CSV export of the journal is also available

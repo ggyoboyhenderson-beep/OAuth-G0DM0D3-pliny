@@ -28,7 +28,7 @@ jobs:
       # Publish only the web app, not node/capacitor project files
       - run: |
           mkdir -p _site
-          cp index.html styles.css script.js sw.js manifest.webmanifest _site/
+          cp index.html styles.css script.js calculators.js sw.js manifest.webmanifest _site/
           cp -r icons _site/
           cp -r share _site/
       - uses: actions/upload-pages-artifact@v3
