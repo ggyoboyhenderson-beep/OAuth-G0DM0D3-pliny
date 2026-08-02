@@ -35,12 +35,12 @@
   function showTab(tab, opts) {
     if (TABS.indexOf(tab) === -1) tab = "today";
     document.body.setAttribute("data-tab", tab);
-    if (tabbar) {
-      tabbar.querySelectorAll("a").forEach(function (a) {
-        if (a.getAttribute("data-tab") === tab) a.setAttribute("aria-current", "page");
-        else a.removeAttribute("aria-current");
-      });
-    }
+    // Mark the active destination in both navs (thumb bar and header)
+    document.querySelectorAll('#tabbar a, .nav-menu a[href^="#"]').forEach(function (a) {
+      var href = (a.getAttribute("href") || "").replace(/^#/, "");
+      if (href === tab || a.getAttribute("data-tab") === tab) a.setAttribute("aria-current", "page");
+      else a.removeAttribute("aria-current");
+    });
     // A view change is a page change to a screen reader, so say so.
     document.title = TAB_LABEL[tab] + " · " + BASE_TITLE;
     if (announcer) announcer.textContent = TAB_LABEL[tab];
