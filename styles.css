@@ -885,16 +885,16 @@ body[data-app][data-has-data] .hero { display: none; }
 
 /* On desktop the top nav carries the same destinations, so the bar is
    redundant below the content width where thumbs aren't the input. */
+/* On desktop the header nav already lists the same five destinations and
+   sits in the natural scan path, so the thumb bar stands down. (It can't
+   be sticky-topped here: it follows <main> in the DOM.) */
 @media (min-width: 900px) {
-  body[data-app] .tabbar {
-    position: sticky; top: 68px; bottom: auto;
-    max-width: var(--maxw); margin: 0 auto; border-top: none;
-    border-bottom: 1px solid rgba(15, 61, 46, 0.1);
-    grid-template-columns: repeat(5, minmax(0, 140px)); justify-content: center;
-  }
+  body[data-app] .tabbar { display: none; }
   body[data-app] main { padding-bottom: 24px; }
   body[data-app] .assistant, body[data-app] .toast-stack { bottom: 22px; }
 }
+/* Current destination is marked in the header nav too */
+.nav-menu a[aria-current="page"] { color: var(--green-600); font-weight: 700; }
 
 /* Today is a dashboard, not an article: trim the editorial chrome so the
    numbers and today's actions fit in the first viewport. */
