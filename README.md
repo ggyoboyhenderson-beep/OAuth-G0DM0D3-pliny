@@ -90,6 +90,19 @@ A clean, responsive **health & wellness website** — evidence-based guidance pl
 - **Articles section** and **newsletter signup** (client-side demo).
 - Fully **responsive** with a mobile nav, accessible markup, and reduced-motion support.
 
+- **Food barcode lookup** — scan a barcode with the camera (or type the number)
+  to see calories and macros from Open Food Facts (ODbL), cache results, and log
+  the food as a meal.
+- **Safety by design** — the Fuel calculator never suggests below 1,200 kcal/day
+  (women) / 1,500 (men) per AHA/ACC/TOS-aligned guidance, and pairs every result
+  with eating-disorder support resources. Streaks are humane: an unfinished today
+  never breaks one, and a weekly rest-day pass bridges a single missed day.
+- **Visible sourcing** — every Health A–Z guide shows its source organization and
+  last-reviewed date, with a stated sourcing methodology.
+- **Plain-language privacy page** — local-only, no account, no ads, no analytics,
+  fully exportable; backups carry a schema version and checksum, validated on
+  restore.
+
 > 🔒 **Privacy:** Vita is a rule-based assistant that runs entirely in your browser.
 > No data ever leaves your device — there is no server and no tracking.
 

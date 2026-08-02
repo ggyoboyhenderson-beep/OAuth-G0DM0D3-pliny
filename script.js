@@ -1422,16 +1422,25 @@
       var bmr = 10 * kg + 6.25 * cm - 5 * age + (sex === "male" ? 5 : -161);
       var tdee = bmr * activity;
       var cal = goal === "cut" ? tdee - 400 : goal === "bulk" ? tdee + 350 : tdee;
-      cal = Math.max(1200, Math.round(cal / 10) * 10);
+      cal = Math.round(cal / 10) * 10;
+      // Safety floor (AHA/ACC/TOS-aligned): never suggest a very-low-calorie
+      // goal. Below the floor needs medical supervision, not an app.
+      var floor = sex === "male" ? 1500 : 1200;
+      var floored = cal < floor;
+      if (floored) cal = floor;
       var proteinPerKg = goal === "cut" ? 2.2 : goal === "bulk" ? 2.0 : 1.8;
       var protein = Math.round(proteinPerKg * kg);
       var fat = Math.round((cal * 0.25) / 9);
       var carbs = Math.max(0, Math.round((cal - protein * 4 - fat * 9) / 4));
       calEl.textContent = cal.toLocaleString();
       pEl.textContent = protein + "g"; cEl.textContent = carbs + "g"; fEl.textContent = fat + "g";
-      noteEl.textContent = (goal === "cut" ? "A ~400 kcal deficit for steady fat loss while protein protects muscle. "
+      noteEl.textContent = (floored
+        ? "⚠️ We won't suggest a goal below " + floor.toLocaleString() + " kcal/day — very-low-calorie diets need medical supervision. This is the safe minimum for you. "
+        : goal === "cut" ? "A ~400 kcal deficit for steady fat loss while protein protects muscle. "
         : goal === "bulk" ? "A modest surplus to build muscle with minimal fat gain — train hard! "
-        : "Balanced to maintain your current weight. ") + "Estimates only — adjust to how your body responds.";
+        : "Balanced to maintain your current weight. ") +
+        "Estimates only — adjust to how your body responds. " +
+        "💚 If food or calorie tracking ever feels stressful, that matters more than any number — consider talking to a professional or visiting nationaleatingdisorders.org.";
     });
   }
 
@@ -1695,6 +1704,7 @@
      each topic linking to its authoritative source. Also powers Vita's
      "tell me about ..." answers.
      ===================================================================== */
+  var TOPICS_REVIEWED = "July 2026"; // bump when guides are re-checked against their sources
   var TOPIC_CATS = {
     heart: "Heart & blood", mind: "Mind", sleep: "Sleep",
     bones: "Bones & muscles", breath: "Breathing & allergy", gut: "Digestion & metabolism",
@@ -1946,7 +1956,8 @@
         '<span class="topic-chevron" aria-hidden="true">▾</span></summary>' +
         '<div class="topic-body"><p>' + t.blurb + "</p><ul>" +
         t.tips.map(function (x) { return "<li>" + x + "</li>"; }).join("") +
-        '</ul><a class="topic-src" href="' + t.src.url + '" target="_blank" rel="noopener">Full guide: ' + t.src.label + " →</a></div></details>";
+        '</ul><a class="topic-src" href="' + t.src.url + '" target="_blank" rel="noopener">Full guide: ' + t.src.label + " →</a>" +
+        '<p class="topic-reviewed">Source: ' + t.src.label + " · Last reviewed " + TOPICS_REVIEWED + "</p></div></details>";
     });
     topicsGrid.innerHTML = html;
     if (topicsEmpty) topicsEmpty.hidden = shown.length > 0;
@@ -2684,12 +2695,21 @@
     if (kind === "water") return t.water >= WATER_GOAL;
     return false;
   }
+  // Humane streaks: an unfinished today never breaks a streak, and one
+  // "rest-day pass" per rolling week bridges a single missed day instead
+  // of resetting to zero (loss-aversion resets drive churn, not habits).
   function computeStreak(kind) {
-    var c = 0;
-    var start = dayMet(dayKeyOffset(0), kind) ? 0 : 1; // an unfinished today doesn't break it
+    var c = 0, sinceGrace = 7;
+    var start = dayMet(dayKeyOffset(0), kind) ? 0 : 1;
     for (var i = start; i < 366; i++) {
-      if (dayMet(dayKeyOffset(i), kind)) c++;
-      else break;
+      if (dayMet(dayKeyOffset(i), kind)) {
+        c++;
+        sinceGrace++;
+      } else if (c > 0 && sinceGrace >= 7) {
+        sinceGrace = 0; // rest-day pass used; streak survives the gap
+      } else {
+        break;
+      }
     }
     return c;
   }
@@ -2819,14 +2839,21 @@
      ===================================================================== */
   var BACKUP_KEYS = ["vh-journal", "vh-reminders", "vh-profile", "vh-chat", "vh-habits",
     "vh-water", "vh-theme", "vh-view", "vh-view-explicit", "vh-wunit", "vh-level", "vh-voice"];
+  // djb2 — cheap integrity check so a truncated/corrupted backup is caught
+  function backupChecksum(storeObj) {
+    var s = JSON.stringify(storeObj), h = 5381;
+    for (var i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) >>> 0;
+    return h.toString(16);
+  }
   function makeBackup() {
-    var data = { app: "vitality-health", version: 1, exportedAt: new Date().toISOString(), store: {} };
+    var data = { app: "vitality-health", version: 1, schemaVersion: 1, exportedAt: new Date().toISOString(), store: {} };
     BACKUP_KEYS.forEach(function (k) {
       try {
         var v = localStorage.getItem(k);
         if (v != null) data.store[k] = v;
       } catch (e) {}
     });
+    data.check = backupChecksum(data.store);
     return data;
   }
   function downloadBackup() {
@@ -2844,6 +2871,12 @@
     try { data = JSON.parse(text); } catch (e) { return "That file isn't valid JSON."; }
     if (!data || data.app !== "vitality-health" || !data.store) {
       return "That doesn't look like a Vitality Health backup file.";
+    }
+    if (data.check && data.check !== backupChecksum(data.store)) {
+      return "This backup file appears damaged (checksum mismatch) — nothing was changed. Try another copy.";
+    }
+    if (data.schemaVersion && data.schemaVersion > 1) {
+      return "This backup is from a newer version of the app — update the app first, then restore.";
     }
     var restored = 0;
     BACKUP_KEYS.forEach(function (k) {
@@ -3037,6 +3070,119 @@
     pw.routine = null;
     if (playerEl) playerEl.hidden = true;
   });
+
+  /* =====================================================================
+     Food barcode lookup — Open Food Facts (ODbL). Camera scanning via
+     BarcodeDetector where supported; typed barcode works everywhere.
+     ===================================================================== */
+  var scanMsg = document.getElementById("scan-msg");
+  var scanResult = document.getElementById("scan-result");
+  var scanCache = {};
+  try { scanCache = JSON.parse(localStorage.getItem("vh-scan-cache") || "{}"); } catch (e) {}
+  var lastFood = null;
+
+  function showFood(f) {
+    lastFood = f;
+    if (!scanResult) return;
+    scanResult.hidden = false;
+    document.getElementById("scan-name").textContent = f.name + (f.brand ? " — " + f.brand : "");
+    document.getElementById("scan-kcal").textContent = f.kcal != null ? Math.round(f.kcal) : "–";
+    document.getElementById("scan-protein").textContent = f.protein != null ? Math.round(f.protein) + "g" : "–";
+    document.getElementById("scan-carbs").textContent = f.carbs != null ? Math.round(f.carbs) + "g" : "–";
+    document.getElementById("scan-fat").textContent = f.fat != null ? Math.round(f.fat) + "g" : "–";
+    if (scanMsg) scanMsg.textContent = "";
+  }
+  function lookupBarcode(code) {
+    code = String(code || "").replace(/\D/g, "");
+    if (code.length < 6) {
+      if (scanMsg) scanMsg.textContent = "That doesn't look like a barcode number.";
+      return;
+    }
+    if (scanCache[code]) { showFood(scanCache[code]); return; }
+    if (scanMsg) scanMsg.textContent = "Looking up " + code + "…";
+    fetch("https://world.openfoodfacts.org/api/v2/product/" + code + ".json?fields=product_name,brands,nutriments")
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!d || d.status !== 1 || !d.product) {
+          if (scanMsg) scanMsg.textContent = "Not found in Open Food Facts — try another product.";
+          return;
+        }
+        var n = d.product.nutriments || {};
+        var f = {
+          code: code,
+          name: d.product.product_name || "Unknown product",
+          brand: d.product.brands || "",
+          kcal: n["energy-kcal_100g"], protein: n.proteins_100g,
+          carbs: n.carbohydrates_100g, fat: n.fat_100g,
+        };
+        scanCache[code] = f;
+        try { localStorage.setItem("vh-scan-cache", JSON.stringify(scanCache)); } catch (e) {}
+        showFood(f);
+      })
+      .catch(function () {
+        if (scanMsg) scanMsg.textContent = "Couldn't reach Open Food Facts — check your connection.";
+      });
+  }
+  var scanLookupBtn = document.getElementById("scan-lookup");
+  var scanCodeInput = document.getElementById("scan-code");
+  if (scanLookupBtn) scanLookupBtn.addEventListener("click", function () { lookupBarcode(scanCodeInput.value); });
+  if (scanCodeInput) scanCodeInput.addEventListener("keydown", function (e) {
+    if (e.key === "Enter") { e.preventDefault(); lookupBarcode(scanCodeInput.value); }
+  });
+  var scanLogBtn = document.getElementById("scan-log");
+  if (scanLogBtn) scanLogBtn.addEventListener("click", function () {
+    if (!lastFood) return;
+    var label = lastFood.name + (lastFood.kcal != null ? " (~" + Math.round(lastFood.kcal) + " kcal/100g)" : "");
+    addEntry("meal", "🍽️", label, null, "");
+    if (scanMsg) scanMsg.textContent = "Logged to your journal. 🍽️";
+  });
+
+  /* camera scanning (BarcodeDetector — Chrome/Android; typed entry elsewhere) */
+  var scannerEl = document.getElementById("scanner");
+  var scannerVideo = document.getElementById("scanner-video");
+  var scannerMsgEl = document.getElementById("scanner-msg");
+  var scanCameraBtn = document.getElementById("scan-camera");
+  var scanStream = null, scanTimer = null;
+  function stopScanner() {
+    if (scanTimer) { clearInterval(scanTimer); scanTimer = null; }
+    if (scanStream) { scanStream.getTracks().forEach(function (t) { t.stop(); }); scanStream = null; }
+    if (scannerEl) scannerEl.hidden = true;
+  }
+  if (scanCameraBtn) {
+    if (!("BarcodeDetector" in window) || !navigator.mediaDevices) {
+      scanCameraBtn.addEventListener("click", function () {
+        if (scanMsg) scanMsg.textContent = "Camera scanning isn't supported in this browser — type the barcode number instead.";
+        if (scanCodeInput) scanCodeInput.focus();
+      });
+    } else {
+      scanCameraBtn.addEventListener("click", function () {
+        var detector;
+        try { detector = new window.BarcodeDetector({ formats: ["ean_13", "ean_8", "upc_a", "upc_e"] }); }
+        catch (e) { if (scanMsg) scanMsg.textContent = "Camera scanning isn't available — type the number instead."; return; }
+        navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } }).then(function (stream) {
+          scanStream = stream;
+          scannerVideo.srcObject = stream;
+          scannerVideo.play();
+          scannerEl.hidden = false;
+          if (scannerMsgEl) scannerMsgEl.textContent = "Looking for a barcode…";
+          scanTimer = setInterval(function () {
+            detector.detect(scannerVideo).then(function (codes) {
+              if (codes && codes.length) {
+                var val = codes[0].rawValue;
+                stopScanner();
+                if (scanCodeInput) scanCodeInput.value = val;
+                lookupBarcode(val);
+              }
+            }).catch(function () {});
+          }, 400);
+        }).catch(function () {
+          if (scanMsg) scanMsg.textContent = "Camera access was denied — type the barcode number instead.";
+        });
+      });
+    }
+  }
+  var scannerExit = document.getElementById("scanner-exit");
+  if (scannerExit) scannerExit.addEventListener("click", stopScanner);
 
   /* ===== Newsletter (client-side demo only) ===== */
   var nlForm = document.getElementById("newsletter-form");
