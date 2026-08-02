@@ -619,6 +619,7 @@ img { max-width: 100%; }
 .topic-body ul li { margin-bottom: 4px; }
 .topic-src { font-weight: 700; font-size: .88rem; color: var(--green-600); }
 .topic-src:hover { text-decoration: underline; }
+.topic-reviewed { font-size: .78rem; color: var(--slate); margin: 8px 0 0; }
 :root[data-theme="dark"] .topic-row { border-bottom-color: rgba(255, 255, 255, 0.08); }
 @media (max-width: 480px) {
   .topic-row-cat { display: none; }
@@ -627,6 +628,28 @@ img { max-width: 100%; }
 .topics-empty { text-align: center; color: var(--slate); }
 .topics-sources { text-align: center; color: var(--slate); font-size: .85rem; margin: 28px auto 0; max-width: 640px; }
 :root[data-theme="dark"] .topic-search { border-color: #2c463a; }
+
+/* ===== Barcode lookup & privacy ===== */
+.scan { max-width: 640px; margin: 24px auto 0; }
+.scan h3 { margin: 0 0 6px; font-size: 1.1rem; }
+.scan > div > p { color: var(--slate); font-size: .9rem; margin: 0 0 14px; }
+.scan-controls { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 12px; }
+.scan-manual { display: flex; gap: 8px; flex: 1 1 260px; }
+.scan-manual input {
+  flex: 1; padding: 11px 14px; border: 2px solid #dbe7df; border-radius: var(--radius-sm);
+  font-family: inherit; font-size: .95rem; background: var(--white); color: var(--ink);
+}
+.scan-manual input:focus { outline: none; border-color: var(--green-500); }
+.scan-result { margin-top: 6px; }
+.scan-name { font-weight: 800; margin: 0 0 10px; }
+.scan-tiles { margin: 0 0 12px; grid-template-columns: repeat(4, 1fr); }
+.scan-tiles .macro-tile:first-child { background: var(--green-100); color: var(--green-700); }
+.scanner-video { width: 100%; border-radius: 14px; background: #000; min-height: 240px; margin: 8px 0; }
+.privacy-card { max-width: 720px; margin: 0 auto; }
+.privacy-card ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
+.privacy-card li { color: var(--slate); line-height: 1.55; }
+.privacy-card li strong { color: var(--ink); }
+:root[data-theme="dark"] .scan-manual input { border-color: #2c463a; }
 
 /* ===== At-home workouts & guided player ===== */
 .routine-meta { display: flex; flex-wrap: wrap; gap: 8px 16px; color: var(--slate); font-size: .85rem; font-weight: 600; margin: 0 0 10px; }
