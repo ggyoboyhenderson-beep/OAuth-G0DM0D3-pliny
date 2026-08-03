@@ -47,6 +47,12 @@ A clean, responsive **health & wellness website** — evidence-based guidance pl
   Epley 1RM, and the macro split live in `calculators.js` and are covered by 24
   unit tests (`npm test`), one of which sweeps ~4,000 body/age/activity
   combinations to prove the safety floor cannot be breached.
+- **This week's picks** — the Learn tab opens with one article, two Health A–Z
+  guides, and one question, refreshed every Monday. The picks come from the
+  calendar week itself (`rotation.js`: week number → seeded shuffle), so every
+  device agrees without a server, and an item can't reappear for 24 weeks.
+  Purely additive — featured items are marked where they already live, and the
+  full library stays listed and searchable.
 - **Accessible** — WCAG 2.2 AA target sizes (24×24 minimum) and visible focus on
   every control; no drag-only interactions.
 - **Durable by habit** — data is stamped with a schema version, persistent
