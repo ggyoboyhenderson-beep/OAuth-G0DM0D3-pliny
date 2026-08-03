@@ -2025,6 +2025,22 @@
       "\nSource: " + tp.src.label + " — the full guide is linked in the Health A–Z section.";
   }
 
+  /* =====================================================================
+     Weekly featured rotation — see rotation.js
+     Picks are computed from the calendar week, so every device shows the
+     same three items with no server. Strictly additive: featured items are
+     highlighted in place and stay in the full lists and in search.
+     ===================================================================== */
+  var ROT = window.VH_ROTATE || null;
+  var WEEKLY = { topics: [], faqs: [], post: null, keys: {} };
+  function isFeatured(key) { return !!WEEKLY.keys[key]; }
+  function featuredPill(key) {
+    return isFeatured(key) ? '<span class="pick-pill">Featured this week</span>' : "";
+  }
+  function markFeatured(list, keyOf) {
+    list.forEach(function (it) { WEEKLY.keys[keyOf(it)] = true; });
+  }
+
   var topicsGrid = document.getElementById("topics-grid");
   var topicsEmpty = document.getElementById("topics-empty");
   var topicSearch = document.getElementById("topic-search");
@@ -2049,9 +2065,9 @@
         html += '<h3 class="topic-letter">' + letter + "</h3>";
         lastLetter = letter;
       }
-      html += '<details class="topic-row"><summary>' +
+      html += '<details class="topic-row" data-pick="' + escapeHtml("topic:" + t.name) + '"><summary>' +
         '<span class="topic-row-emoji" aria-hidden="true">' + t.emoji + "</span>" +
-        '<span class="topic-row-name">' + t.name + "</span>" +
+        '<span class="topic-row-name">' + t.name + featuredPill("topic:" + t.name) + "</span>" +
         '<span class="topic-row-cat">' + TOPIC_CATS[t.cat] + "</span>" +
         '<span class="topic-chevron" aria-hidden="true">▾</span></summary>' +
         '<div class="topic-body"><p>' + t.blurb + "</p><ul>" +
@@ -2078,6 +2094,10 @@
     });
   }
   if (topicSearch) topicSearch.addEventListener("input", renderTopics);
+  if (ROT) {
+    WEEKLY.topics = ROT.weeklyPicks(TOPICS, ROT.safeCount(TOPICS.length, 2), "topics");
+    markFeatured(WEEKLY.topics, function (t) { return "topic:" + t.name; });
+  }
   renderTopics();
 
   /* =====================================================================
@@ -2365,9 +2385,9 @@
     return null;
   }
   function faqRowHtml(f) {
-    return '<details class="topic-row"><summary>' +
+    return '<details class="topic-row" data-pick="' + escapeHtml("faq:" + f.q) + '"><summary>' +
       '<span class="topic-row-emoji" aria-hidden="true">❓</span>' +
-      '<span class="topic-row-name">' + f.q + "</span>" +
+      '<span class="topic-row-name">' + f.q + featuredPill("faq:" + f.q) + "</span>" +
       '<span class="topic-row-cat">' + FAQ_CATS[f.cat] + "</span>" +
       '<span class="topic-chevron" aria-hidden="true">▾</span></summary>' +
       '<div class="topic-body"><p>' + f.a + "</p></div></details>";
@@ -2376,6 +2396,10 @@
     var faqSorted = FAQS.slice().sort(function (a, b) {
       return FAQ_CATS[a.cat].localeCompare(FAQ_CATS[b.cat]);
     });
+    if (ROT) {
+      WEEKLY.faqs = ROT.weeklyPicks(FAQS, ROT.safeCount(FAQS.length, 1), "faqs");
+      markFeatured(WEEKLY.faqs, function (f) { return "faq:" + f.q; });
+    }
     buildDirectory({
       items: faqSorted,
       listEl: document.getElementById("faq-list"),
@@ -2389,6 +2413,133 @@
       rowHtml: faqRowHtml,
     });
   }
+
+  /* =====================================================================
+     "This week's picks" strip (Learn)
+     Highlights one blog post, two Health A–Z guides and one question.
+     Every card jumps to the real item further down the page — the strip is
+     a shortcut into the library, never a replacement for it.
+     ===================================================================== */
+  (function () {
+    var strip = document.getElementById("picks-strip");
+    var section = document.getElementById("picks");
+    if (!strip || !section || !ROT) return;
+
+    // The blog lives in the markup, so read the posts back out of the DOM:
+    // one source of truth, and new articles join the rotation automatically.
+    var postEls = [].slice.call(document.querySelectorAll("#articles .article"));
+    var posts = postEls.map(function (el, i) {
+      var h = el.querySelector("h3"), tag = el.querySelector(".article-tag"), p = el.querySelector("p");
+      return {
+        i: i,
+        title: h ? h.textContent.trim() : "Article " + (i + 1),
+        tag: tag ? tag.textContent.trim() : "Blog",
+        blurb: p ? p.textContent.trim() : "",
+      };
+    });
+    if (posts.length) {
+      WEEKLY.post = ROT.weeklyPicks(posts, ROT.safeCount(posts.length, 1), "posts")[0] || null;
+    }
+
+    var cards = [];
+    if (WEEKLY.post) {
+      cards.push({
+        kind: "Read", emoji: "📖", target: "post:" + WEEKLY.post.i,
+        title: WEEKLY.post.title, meta: WEEKLY.post.tag, blurb: WEEKLY.post.blurb,
+      });
+    }
+    WEEKLY.topics.forEach(function (t) {
+      cards.push({
+        kind: "Learn", emoji: t.emoji, target: "topic:" + t.name,
+        title: t.name, meta: TOPIC_CATS[t.cat], blurb: t.blurb,
+      });
+    });
+    WEEKLY.faqs.forEach(function (f) {
+      cards.push({
+        kind: "Answer", emoji: "❓", target: "faq:" + f.q,
+        title: f.q, meta: FAQ_CATS[f.cat], blurb: f.a,
+      });
+    });
+    if (!cards.length) return;
+
+    strip.innerHTML = cards.map(function (c) {
+      return '<button type="button" class="pick-card" data-target="' + escapeHtml(c.target) + '">' +
+        '<span class="pick-kind"><span class="pick-emoji" aria-hidden="true">' + c.emoji + "</span>" +
+        escapeHtml(c.kind) + "</span>" +
+        '<span class="pick-title">' + escapeHtml(c.title) + "</span>" +
+        '<span class="pick-blurb">' + escapeHtml(c.blurb) + "</span>" +
+        '<span class="pick-meta">' + escapeHtml(c.meta) + '<span class="pick-go" aria-hidden="true">→</span></span>' +
+        "</button>";
+    }).join("");
+
+    var weekEl = document.getElementById("picks-week");
+    if (weekEl) {
+      weekEl.textContent = "Week of " + weekStartLabel() + " · new picks every Monday. " +
+        "Nothing is hidden — the full library is below and always searchable.";
+    }
+    section.hidden = false;
+
+    function weekStartLabel() {
+      var d = new Date();
+      d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); // back to Monday
+      return d.toLocaleDateString(undefined, { month: "long", day: "numeric" });
+    }
+
+    // Clear any active search/filter in a directory so the target row is
+    // guaranteed to be on screen before we jump to it.
+    function resetControls(searchId, chipsId) {
+      var s = document.getElementById(searchId);
+      if (s && s.value) {
+        s.value = "";
+        s.dispatchEvent(new Event("input", { bubbles: true }));
+      }
+      var chips = document.getElementById(chipsId);
+      if (chips) {
+        var all = chips.querySelector('.tchip[data-cat="all"]');
+        if (all && !all.classList.contains("active")) all.click();
+      }
+    }
+
+    function rowFor(key) {
+      var rows = document.querySelectorAll("#topics-grid .topic-row, #faq-list .topic-row");
+      for (var i = 0; i < rows.length; i++) {
+        if (rows[i].dataset.pick === key) return rows[i];
+      }
+      return null;
+    }
+
+    function reveal(el, open) {
+      if (!el) return;
+      if (open && el.tagName === "DETAILS") el.open = true;
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      el.classList.add("pick-flash");
+      setTimeout(function () { el.classList.remove("pick-flash"); }, 1600);
+      var focusable = el.querySelector("summary") || el;
+      if (!focusable.hasAttribute("tabindex") && focusable === el) focusable.setAttribute("tabindex", "-1");
+      try { focusable.focus({ preventScroll: true }); } catch (e) { focusable.focus(); }
+    }
+
+    strip.addEventListener("click", function (e) {
+      var card = e.target.closest(".pick-card");
+      if (!card) return;
+      var key = card.dataset.target || "";
+      if (key.indexOf("post:") === 0) {
+        reveal(postEls[Number(key.slice(5))], false);
+        return;
+      }
+      if (key.indexOf("topic:") === 0) resetControls("topic-search", "topic-chips");
+      if (key.indexOf("faq:") === 0) resetControls("faq-search", "faq-chips");
+      reveal(rowFor(key), true);
+    });
+
+    // Mark the featured blog card in place, same as the list rows.
+    if (WEEKLY.post && postEls[WEEKLY.post.i]) {
+      var el = postEls[WEEKLY.post.i];
+      el.classList.add("is-featured");
+      var tagEl = el.querySelector(".article-tag");
+      if (tagEl) tagEl.insertAdjacentHTML("afterend", '<span class="pick-pill">Featured this week</span>');
+    }
+  })();
 
   /* =====================================================================
      Live step counter (accelerometer, while the app is open)

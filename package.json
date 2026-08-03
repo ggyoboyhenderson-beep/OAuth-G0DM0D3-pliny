@@ -4,11 +4,11 @@
   "description": "Vitality Health \u2014 wellness PWA with a native companion app for background steps and watch sync",
   "private": true,
   "scripts": {
-    "build": "mkdir -p www && cp index.html styles.css script.js calculators.js sw.js manifest.webmanifest www/ && cp -r icons www/",
+    "build": "mkdir -p www && cp index.html styles.css script.js calculators.js rotation.js sw.js manifest.webmanifest www/ && cp -r icons www/",
     "sync": "npm run build && npx cap sync",
     "android": "npm run sync && npx cap open android",
     "ios": "npm run sync && npx cap open ios",
-    "test": "node --test test/calculators.test.js"
+    "test": "node --test test/calculators.test.js test/rotation.test.js"
   },
   "dependencies": {
     "@capacitor/core": "^8.0.0",

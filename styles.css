@@ -116,7 +116,9 @@ img { max-width: 100%; }
 .brand { display: flex; align-items: center; gap: 8px; font-size: 1.25rem; font-weight: 600; color: var(--ink); }
 .brand-mark { font-size: 1.4rem; }
 .brand-name strong { color: var(--green-600); font-weight: 800; }
-.nav-menu { list-style: none; display: flex; align-items: center; gap: 26px; margin: 0; padding: 0; }
+/* clamp, not a fixed gap: at exactly 900px — where the desktop nav takes
+   over from the menu button — 26px pushed the last item ~5px off-screen. */
+.nav-menu { list-style: none; display: flex; align-items: center; gap: clamp(14px, 2.4vw, 26px); margin: 0; padding: 0; }
 .nav-menu a { color: var(--ink); font-weight: 500; }
 .nav-menu a:hover { color: var(--green-600); }
 .nav-toggle { display: none; background: none; border: none; cursor: pointer; padding: 8px; }
@@ -903,3 +905,62 @@ body[data-app][data-tab="today"] .section-head { margin-bottom: 18px; text-align
 body[data-app][data-tab="today"] .section-head p { display: none; }
 body[data-app][data-tab="today"] .section-head h2 { font-size: 1.35rem; }
 body[data-app][data-tab="today"] .journal-cols { gap: 14px; }
+
+/* ===== This week's picks (Learn) =====
+   A shortcut into the library, not a replacement for it: every card jumps to
+   the real row further down the page, which stays in the list and in search.
+   Deliberately a static strip — nothing auto-advances, so nothing is ever
+   missed by looking away. */
+.picks-strip {
+  display: grid; gap: 14px; margin: 0 auto;
+  grid-template-columns: repeat(auto-fit, minmax(238px, 1fr));
+}
+.pick-card {
+  display: flex; flex-direction: column; gap: 8px; text-align: left;
+  background: var(--white); border: 1px solid rgba(15, 61, 46, 0.1);
+  border-radius: var(--radius); padding: 18px; cursor: pointer;
+  font-family: inherit; color: var(--ink); min-height: 44px;
+  box-shadow: var(--shadow); transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+}
+.pick-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); border-color: var(--green-500); }
+.pick-card:focus-visible { outline: 3px solid var(--green-500); outline-offset: 2px; }
+.pick-kind {
+  display: flex; align-items: center; gap: 8px;
+  font-size: .74rem; font-weight: 800; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--green-600);
+}
+.pick-emoji { font-size: 1.1rem; }
+.pick-title { font-size: 1.05rem; font-weight: 700; line-height: 1.35; }
+.pick-blurb {
+  color: var(--slate); font-size: .9rem; line-height: 1.5; flex: 1;
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+}
+.pick-meta {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  font-size: .72rem; font-weight: 700; letter-spacing: .05em;
+  text-transform: uppercase; color: var(--slate);
+}
+.pick-go { color: var(--green-600); font-size: .95rem; }
+.picks-week { text-align: center; color: var(--slate); font-size: .82rem; margin: 16px 0 0; }
+
+/* The same items, marked where they actually live */
+.pick-pill {
+  display: inline-block; margin-left: 8px; padding: 2px 9px; border-radius: 999px;
+  background: var(--green-100); color: var(--green-700);
+  font-size: .66rem; font-weight: 800; letter-spacing: .06em;
+  text-transform: uppercase; vertical-align: middle; white-space: nowrap;
+}
+.article.is-featured { border-color: var(--green-500); }
+.article .pick-pill { margin: 0 0 10px; }
+
+/* Brief highlight after jumping from a card, so the eye lands in the right place */
+.pick-flash { animation: pick-flash 1.6s ease-out; border-radius: 12px; }
+@keyframes pick-flash {
+  0%, 55% { background: var(--green-100); }
+  100% { background: transparent; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pick-card { transition: none; }
+  .pick-card:hover { transform: none; }
+  .pick-flash { animation: none; box-shadow: 0 0 0 3px var(--green-500); }
+}
