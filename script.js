@@ -2103,22 +2103,37 @@
   /* =====================================================================
      App install (PWA) — offline service worker + install button
      ===================================================================== */
+  var swReg = null;
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", function () {
       navigator.serviceWorker.register("./sw.js").then(function (reg) {
-        // Check for a new version whenever the app comes back to the
-        // foreground, so installed apps pick up updates on every open.
+        swReg = reg;
+        // Check right away, not only on the *next* foreground: otherwise a
+        // freshly-shipped version isn't picked up until a later open.
+        reg.update().catch(function () {});
         document.addEventListener("visibilitychange", function () {
           if (document.visibilityState === "visible") reg.update().catch(function () {});
         });
       }).catch(function () {
         /* offline support unavailable — the site still works normally */
       });
-      // Announce silent self-updates. Data in localStorage is untouched.
+      // A new worker taking over does NOT change the page already on screen —
+      // that HTML/CSS/JS was fetched by the old one. Without a reload the user
+      // is told "updated" while still looking at the previous version, which
+      // is exactly the "I don't see the update" trap. So reload once, unless
+      // they're mid-sentence in a field.
       var hadController = !!navigator.serviceWorker.controller;
+      var reloading = false;
       navigator.serviceWorker.addEventListener("controllerchange", function () {
-        if (hadController) {
-          showToast("✨", "App updated", "You're on the newest version — all your data is untouched.");
+        if (hadController && !reloading) {
+          reloading = true;
+          if (hasUnsavedText()) {
+            showToast("✨", "Update ready", "Tap here to load the newest version.", 12000, function () {
+              window.location.reload();
+            });
+          } else {
+            window.location.reload();
+          }
         }
         hadController = true;
       });
@@ -2127,6 +2142,53 @@
     if (navigator.storage && navigator.storage.persist) {
       navigator.storage.persist().catch(function () {});
     }
+  }
+  /* Version readout. APP_VERSION is baked into this file, so it reports what
+     is *actually running on screen* — if the page is stale, it says so rather
+     than reporting whatever the server has. Keep in step with CACHE in sw.js. */
+  var APP_VERSION = "v13";
+  var versionEl = document.getElementById("app-version");
+  var versionState = document.getElementById("version-state");
+  var updateBtn = document.getElementById("update-btn");
+  var offeredUpdate = false;
+  if (versionEl) versionEl.textContent = APP_VERSION;
+  function checkForUpdates(quiet) {
+    if (versionState) versionState.textContent = "· checking…";
+    // cache: no-store so we compare against the server, not the local copy.
+    fetch("./sw.js?ts=" + Date.now(), { cache: "no-store" })
+      .then(function (r) { return r.text(); })
+      .then(function (txt) {
+        var m = txt.match(/vitality-(v\d+)/);
+        var latest = m ? m[1] : null;
+        if (!latest) throw new Error("no version");
+        if (latest === APP_VERSION) {
+          if (versionState) versionState.textContent = "· up to date";
+          if (!quiet) showToast("✅", "You're up to date", "Running the newest version (" + APP_VERSION + ").");
+          return;
+        }
+        if (versionState) versionState.textContent = "· " + latest + " available";
+        if (offeredUpdate) return; // the auto-check and the button share one offer
+        offeredUpdate = true;
+        showToast("✨", "Update available", "Tap here to load " + latest + ". Your data stays exactly as it is.", 15000, function () {
+          if (swReg) swReg.update().catch(function () {});
+          setTimeout(function () { window.location.reload(true); }, 400);
+        });
+      })
+      .catch(function () {
+        if (versionState) versionState.textContent = "· offline";
+        if (!quiet) showToast("📶", "Can't check right now", "You're offline — the app still works, and it'll update next time you're online.");
+      });
+  }
+  if (updateBtn) updateBtn.addEventListener("click", function () { checkForUpdates(false); });
+  // Quiet check on every open, so a stale page announces itself without asking.
+  if (versionEl) setTimeout(function () { checkForUpdates(true); }, 2500);
+
+  function hasUnsavedText() {
+    var fields = document.querySelectorAll("input[type=text], input[type=search], input[type=number], textarea");
+    for (var i = 0; i < fields.length; i++) {
+      if (fields[i].value && fields[i].value.trim()) return true;
+    }
+    return false;
   }
   var installBtn = document.getElementById("install-btn");
   var deferredInstall = null;

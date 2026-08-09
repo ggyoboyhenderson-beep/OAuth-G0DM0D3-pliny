@@ -964,3 +964,10 @@ body[data-app][data-tab="today"] .journal-cols { gap: 14px; }
   .pick-card:hover { transform: none; }
   .pick-flash { animation: none; box-shadow: 0 0 0 3px var(--green-500); }
 }
+
+/* Version readout — a plain answer to "am I actually on the latest?" */
+.version-card { margin-top: 18px; text-align: center; }
+.version-line { margin: 0 0 6px; font-size: .95rem; color: var(--ink); }
+.version-line strong { color: var(--green-600); }
+#version-state { color: var(--slate); font-size: .85rem; }
+.version-note { margin: 0 0 14px; color: var(--slate); font-size: .84rem; }
